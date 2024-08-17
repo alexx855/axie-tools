@@ -51,7 +51,7 @@
     "hardhat": "^2.14.0"
   },
   "dependencies": {
-    "@roninbuilders/contracts": "^0.4.2",
+    "@roninbuilders/contracts": "^0.4.4",
     "ethers": "^5.7.0",
     "typescript": "^5.1.6"
   }

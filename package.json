@@ -1,6 +1,6 @@
 {
   "name": "axie-ronin-ethers-js-tools",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "A set of functions that make it easier for developers to interact with their Axies on the Ronin network and the maketplace.",
   "scripts": {
     "build": "tsc",

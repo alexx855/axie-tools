@@ -1,5 +1,7 @@
 import type { HardhatRuntimeEnvironment } from "hardhat/types"
 import { getAxieContract, getUSDCContract, getWETHContract } from "../lib/contracts"
+import { MARKETPLACE_GATEWAY_V2, WRAPPED_ETHER } from "@roninbuilders/contracts"
+import { DEFAULT_GAS_LIMIT } from "../lib/constants"
 
 export default async function account(taskArgs: {}, hre: HardhatRuntimeEnvironment) {
   if (hre.network.name != 'ronin' && hre.network.name != 'saigon') {
@@ -17,10 +19,14 @@ export default async function account(taskArgs: {}, hre: HardhatRuntimeEnvironme
     console.log('RON:', balanceInEther)
 
     // get WETH balance
-    const wethContract = await getWETHContract(hre.ethers.provider)
+    const wethContract = await getWETHContract(signer)
     const wethBalance = await wethContract.balanceOf(address)
     const wethBalanceInEther = hre.ethers.utils.formatEther(wethBalance)
     console.log('WETH:', wethBalanceInEther)
+
+    // WETH allowance
+    const allowance = await wethContract.allowance(address, MARKETPLACE_GATEWAY_V2.address)
+    console.log('Marketplace WETH has allowance:', !allowance.eq(0))
 
     // get axie contract
     const axieContract = await getAxieContract(hre.ethers.provider)

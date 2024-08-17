@@ -145,7 +145,7 @@ export default async function buyMarketplaceOrder(
       console.log('Need approve the marketplace contract to transfer WETH, no allowance')
       // Same amount as the ronin wallet uses, i got it from there
       const amountToapproved = '115792089237316195423570985008687907853269984665640564039457584007913129639935'
-      const txApproveWETH = await wethContract.approve(contract.address, amountToapproved, { gasLimit: DEFAULT_GAS_LIMIT })
+      const txApproveWETH = await wethContract.approve(contract.address, amountToapproved)
       const txArppoveReceipt = await txApproveWETH.wait()
       console.log('Approved WETH', txArppoveReceipt.transactionHash)
     }

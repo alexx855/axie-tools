@@ -1,12 +1,10 @@
 import { buyMarketplaceOrder, approveWETH } from "axie-tools";
 import { ethers, utils } from 'ethers';
-import * as dotenv from 'dotenv'
-
-dotenv.config()
+import 'dotenv/config'
 
 async function buyAxie() {
-  if (!process.env.PRIVATE_KEY) {
-    throw new Error('Please set your PRIVATE_KEY in a .env file')
+  if (!process.env.PRIVATE_KEY || !process.env.MARKETPLACE_ACCESS_TOKEN) {
+    throw new Error('Please set your PRIVATE_KEY, MARKETPLACE_ACCESS_TOKEN, and SKYMAVIS_DAPP_KEY in a .env file');
   }
 
   // Initialize provider and wallet
@@ -29,7 +27,12 @@ async function buyAxie() {
 
   try {
     await approveWETH(wallet);
-    const receipt = await buyMarketplaceOrder(axieId, wallet);
+
+    const receipt = await buyMarketplaceOrder(
+      axieId,
+      wallet,
+      process.env.MARKETPLACE_ACCESS_TOKEN,
+    );
     if (receipt) {
       console.log('✅ Transaction successful! Hash:', receipt.transactionHash);
       console.log('🔗 View transaction: https://app.roninchain.com/tx/' + receipt.transactionHash);

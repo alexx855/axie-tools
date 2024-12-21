@@ -1,3 +1,4 @@
+// Not working, it is asking for captcha now, you can try to fix it by adding captcha solver, refresh still working if you have a valid access token
 import { apiRequest } from "../utils";
 
 const AUTH_NONCE_URL = 'https://athena.skymavis.com/v2/public/auth/ronin/fetch-nonce'

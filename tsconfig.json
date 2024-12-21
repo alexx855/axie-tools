@@ -14,11 +14,10 @@
     "lib/**/*.ts",
     "lib/**/*.json",
     "index.ts",
+    "cli.ts"
   ],
   "exclude": [
     "node_modules",
-    "hardhat.config.ts",
-    "scripts",
-    "test"
+    "scripts"
   ],
 }

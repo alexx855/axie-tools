@@ -1,23 +1,23 @@
 import { getAxieIdsFromAccount } from "./lib/axie";
-import { generateAccessTokenMessage, exchangeToken } from "./lib/marketplace/access-token";
+import { refreshToken } from "./lib/marketplace/access-token";
 import { getAxieContract, getUSDCContract, getWETHContract } from "./lib/contracts"
-import approveMarketplaceContract from "./lib/marketplace/approve";
+import { batchTransferAxies, transferAxie } from "./lib/transfers";
+import { approveMarketplaceContract, approveWETH, approveBatchTransfer } from "./lib/marketplace/approve";
 import cancelMarketplaceOrder from "./lib/marketplace/cancel-order";
-import createActivity from "./lib/marketplace/create-activity";
 import createMarketplaceOrder from "./lib/marketplace/create-order";
-import batchTransferAxies from "./lib/batch-transfer";
-import buyMarketplaceOrder from "./lib/marketplace/buy-order";
+import buyMarketplaceOrder from "./lib/marketplace/settle-order";
 
 export {
-  generateAccessTokenMessage,
-  exchangeToken,
+  refreshToken,
   getAxieIdsFromAccount,
   approveMarketplaceContract,
+  approveWETH,
+  approveBatchTransfer,
   createMarketplaceOrder,
   cancelMarketplaceOrder,
   buyMarketplaceOrder,
-  createActivity,
   batchTransferAxies,
+  transferAxie,
   getAxieContract,
   getUSDCContract,
   getWETHContract,

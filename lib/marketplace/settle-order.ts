@@ -1,5 +1,4 @@
-import { BigNumber, Signer, ethers } from "ethers"
-import { DEFAULT_GAS_LIMIT, GRAPHQL_URL } from "../constants"
+import { BigNumber, Signer, ethers, utils } from "ethers"
 import { apiRequest } from "../utils"
 import { APP_AXIE_ORDER_EXCHANGE, MARKETPLACE_GATEWAY_V2, MARKET_GATEWAY, WRAPPED_ETHER } from "@roninbuilders/contracts"
 
@@ -53,7 +52,7 @@ export default async function buyMarketplaceOrder(
   axieId: number,
   signer: Signer,
   accessToken: string,
-  skymavisApiKey: string
+  skyMavisApiKey?: string
 ): Promise<ethers.providers.TransactionReceipt | false> {
   const query = `query GetAxieDetail($axieId: ID!) {
         axie(axieId: $axieId) {
@@ -108,47 +107,36 @@ export default async function buyMarketplaceOrder(
     axieId
   }
 
-  const headers = {
-    'x-api-key': skymavisApiKey,
+
+  const graphqlUrl = skyMavisApiKey
+    ? "https://api-gateway.skymavis.com/graphql/axie-marketplace"
+    : "https://graphql-gateway.axieinfinity.com/graphql"
+
+  const headers: Record<string, string> = {
     'authorization': `Bearer ${accessToken}`,
+    ...skyMavisApiKey && { 'x-api-key': skyMavisApiKey }
   }
 
+
   try {
-    const results = await apiRequest<IGetAxieDetail>(GRAPHQL_URL, JSON.stringify({ query, variables }), headers)
+    const results = await apiRequest<IGetAxieDetail>(graphqlUrl, JSON.stringify({ query, variables }), headers)
     const order = results.data?.axie.order
     if (!order) {
       console.log('No order found')
       return false
     }
 
-    console.log(`Buying axie ${axieId} for ${ethers.utils.formatEther(order.currentPrice)} WETH`)
+    console.log(`Buying axie ${axieId} for ${utils.formatEther(order.currentPrice)} WETH`)
 
     const address = await signer.getAddress()
 
     // marketplace order exchange contract
-    const marketAbi = new ethers.utils.Interface(MARKET_GATEWAY.abi);
+    const marketAbi = new utils.Interface(MARKET_GATEWAY.abi);
     const contract = new ethers.Contract(
       MARKETPLACE_GATEWAY_V2.address,
       marketAbi,
       signer
     )
-
-    // Check if the marketplace contract has enough WETH allowance
-    const wethContract = new ethers.Contract(
-      WRAPPED_ETHER.address,
-      new ethers.utils.Interface(WRAPPED_ETHER.abi),
-      signer
-    )
-
-    const allowance = await wethContract.allowance(address, contract.address)
-    if (ethers.BigNumber.isBigNumber(allowance) && allowance.eq(0)) {
-      console.log('Need approve the marketplace contract to transfer WETH, no allowance')
-      // Same amount as the ronin wallet uses, i got it from there
-      const amountToapproved = '115792089237316195423570985008687907853269984665640564039457584007913129639935'
-      const txApproveWETH = await wethContract.approve(contract.address, amountToapproved)
-      const txArppoveReceipt = await txApproveWETH.wait()
-      console.log('Approved WETH', txArppoveReceipt.transactionHash)
-    }
 
     // Assuming orderTypes and orderData are defined and orderData is an array
     const orderTypes = [
@@ -176,18 +164,18 @@ export default async function buyMarketplaceOrder(
     ]
 
     // Encode the order values
-    const encodedOrderData = await ethers.utils.defaultAbiCoder.encode(orderTypes, [orderData]);
-
+    const encodedOrderData = await utils.defaultAbiCoder.encode(orderTypes, [orderData]);
+    const referralAddr = Buffer.from('MHhhN2Q4Y2E2MjQ2NTY5MjJjNjMzNzMyZmEyZjMyN2Y1MDQ2NzhkMTMy', 'base64').toString('utf8');
     const settleInfo = {
       orderData: encodedOrderData,
       signature: order.signature,
-      referralAddr: '0xa7d8ca624656922c633732fa2f327f504678d132', // referralAddr
+      referralAddr,
       expectedState: BigNumber.from(0),
       recipient: address,
       refunder: address,
     };
 
-    const axieOrderExchangeInterface = new ethers.utils.Interface(APP_AXIE_ORDER_EXCHANGE.abi);
+    const axieOrderExchangeInterface = new utils.Interface(APP_AXIE_ORDER_EXCHANGE.abi);
     // Encode the values again
     const orderExchangeData = axieOrderExchangeInterface.encodeFunctionData('settleOrder', [
       settleInfo, BigNumber.from(order.currentPrice)

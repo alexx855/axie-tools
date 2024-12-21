@@ -1,9 +1,6 @@
 import { ethers } from "ethers";
 import { MARKETPLACE_GATEWAY_V2, AXIE_PROXY, WRAPPED_ETHER } from "@roninbuilders/contracts";
 import { apiRequest } from "../utils"
-import {
-  GRAPHQL_URL
-} from "../constants"
 
 export interface ICreateOrderData {
   address: string;
@@ -19,6 +16,7 @@ export interface ICreateOrderResult {
   data?: {
     createOrder: {
       hash: string
+      currentPriceUsd: string
     }
   }
   errors?: Array<{
@@ -30,7 +28,7 @@ export default async function createMarketplaceOrder(
   orderData: ICreateOrderData,
   accessToken: string,
   signer: ethers.Wallet,
-  skyMavisApiKey: string
+  skyMavisApiKey?: string
 ) {
 
   const {
@@ -207,11 +205,15 @@ export default async function createMarketplaceOrder(
     signature
   }
 
-  const headers = {
-    'authorization': `Bearer ${accessToken}`, // axie marketplace access token
-    'x-api-key': skyMavisApiKey // skymavis app api key
+  const graphqlUrl = skyMavisApiKey
+    ? "https://api-gateway.skymavis.com/graphql/axie-marketplace"
+    : "https://graphql-gateway.axieinfinity.com/graphql"
+
+  const headers: Record<string, string> = {
+    'authorization': `Bearer ${accessToken}`,
+    ...skyMavisApiKey && { 'x-api-key': skyMavisApiKey }
   }
 
-  const result = await apiRequest<ICreateOrderResult>(GRAPHQL_URL, JSON.stringify({ query, variables }), headers)
+  const result = await apiRequest<ICreateOrderResult>(graphqlUrl, JSON.stringify({ query, variables }), headers)
   return result
 }

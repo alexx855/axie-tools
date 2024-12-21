@@ -1,7 +1,7 @@
 {
-  "name": "batch-transfer",
+  "name": "axie-tools-marketplace-examples",
   "version": "1.0.0",
-  "description": "Axie Infinity ether js batch Transfer",
+  "description": "Axie Infinity ether js marketplace examples",
   "author": {
     "name": "Alex Pedersen",
     "email": "hello@alexpedersen.dev",
@@ -13,7 +13,7 @@
   "type": "module",
   "license": "ISC",
   "dependencies": {
-    "axie-ronin-ethers-js-tools": "^1.1.1",
+    "axie-tools": "1.5.0",
     "dotenv": "^16.3.1",
     "ethers": "^5.7.0"
   }

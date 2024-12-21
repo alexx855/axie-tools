@@ -1,16 +1,21 @@
 {
-  "name": "axie-ronin-ethers-js-tools",
-  "version": "1.4.3",
-  "description": "A set of functions that make it easier for developers to interact with their Axies on the Ronin network and the maketplace.",
+  "name": "axie-tools",
+  "version": "1.5.0",
+  "description": "A set of tools to make it easier for developers to interact with Axies on the Ronin network and the maketplace.",
   "scripts": {
     "build": "tsc",
+    "start": "node dist/cli.js",
+    "dev": "bun cli.ts",
     "prepublishOnly": "npm run build"
   },
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/alexx855/axie-ronin-ethers-js-tools.git"
+    "url": "git+https://github.com/alexx855/axie-tools.git"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -41,17 +46,19 @@
   },
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/alexx855/axie-ronin-ethers-js-tools/issues"
+    "url": "https://github.com/alexx855/axie-tools/issues"
   },
-  "homepage": "https://github.com/alexx855/axie-ronin-ethers-js-tools#readme",
+  "homepage": "https://github.com/alexx855/axie-tools#readme",
+  "bin": {
+    "axie-tools": "./dist/cli.js"
+  },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "@types/node": "^18.15.11",
-    "dotenv": "^16.3.1",
-    "hardhat": "^2.14.0"
+    "dotenv": "^16.3.1"
   },
   "dependencies": {
-    "@roninbuilders/contracts": "^0.4.4",
+    "@inquirer/prompts": "^7.2.0",
+    "@roninbuilders/contracts": "^0.5.0",
     "ethers": "^5.7.0",
     "typescript": "^5.1.6"
   }

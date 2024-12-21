@@ -1,12 +1,9 @@
-import { ethers } from "ethers";
-import { SignerOrProvider } from "./utils";
-import { type AvailableNetworks } from "./constants";
+import { ethers, utils } from "ethers";
 import { AXIE_PROXY, ERC721_BATCH_TRANSFER, MARKETPLACE_GATEWAY_V2, USD_COIN, WRAPPED_ETHER } from "@roninbuilders/contracts";
 
-
-export async function getAxieContract(signerOrProvider?: SignerOrProvider, network: AvailableNetworks = 'ronin') {
+export function getAxieContract(signerOrProvider?: ethers.Signer | ethers.providers.Provider) {
   const address = AXIE_PROXY.address
-  const abi = new ethers.utils.Interface(AXIE_PROXY.abi);
+  const abi = new utils.Interface(AXIE_PROXY.abi);
   const axieContract = new ethers.Contract(
     address,
     abi,
@@ -15,9 +12,9 @@ export async function getAxieContract(signerOrProvider?: SignerOrProvider, netwo
   return axieContract
 }
 
-export async function getMarketplaceContract(signerOrProvider?: SignerOrProvider, network: AvailableNetworks = 'ronin') {
+export function getMarketplaceContract(signerOrProvider?: ethers.Signer | ethers.providers.Provider) {
   const address =  MARKETPLACE_GATEWAY_V2.address
-  const abi = new ethers.utils.Interface(MARKETPLACE_GATEWAY_V2.abi);
+  const abi = new utils.Interface(MARKETPLACE_GATEWAY_V2.abi);
   const marketplaceContract = new ethers.Contract(
     address,
     abi,
@@ -26,9 +23,9 @@ export async function getMarketplaceContract(signerOrProvider?: SignerOrProvider
   return marketplaceContract
 }
 
-export async function getBatchTransferContract(signerOrProvider?: SignerOrProvider, network: AvailableNetworks = 'ronin') {
+export function getBatchTransferContract(signerOrProvider?: ethers.Signer | ethers.providers.Provider) {
   const address =  ERC721_BATCH_TRANSFER.address
-  const abi = new ethers.utils.Interface(ERC721_BATCH_TRANSFER.abi);
+  const abi = new utils.Interface(ERC721_BATCH_TRANSFER.abi);
   const batchTransferContract = new ethers.Contract(
     address,
     abi,
@@ -37,9 +34,9 @@ export async function getBatchTransferContract(signerOrProvider?: SignerOrProvid
   return batchTransferContract
 }
 
-export async function getWETHContract(signerOrProvider?: SignerOrProvider, network: AvailableNetworks = 'ronin') {
+export function getWETHContract(signerOrProvider?: ethers.Signer | ethers.providers.Provider) {
   const address = WRAPPED_ETHER.address
-  const abi = new ethers.utils.Interface(WRAPPED_ETHER.abi);
+  const abi = new utils.Interface(WRAPPED_ETHER.abi);
   const wethContract = new ethers.Contract(
     address,
     abi,
@@ -48,10 +45,10 @@ export async function getWETHContract(signerOrProvider?: SignerOrProvider, netwo
   return wethContract
 }
 
-export async function getUSDCContract(signerOrProvider?: SignerOrProvider, network: AvailableNetworks = 'ronin') {
+export function getUSDCContract(signerOrProvider?: ethers.Signer | ethers.providers.Provider) {
   const address =  USD_COIN.address
   // @ts-expect-error wrong USD_COIN.abi??
-  const abi = new ethers.utils.Interface(USD_COIN.abi);
+  const abi = new utils.Interface(USD_COIN.abi);
   const usdcContract = new ethers.Contract(
     address,
     abi,

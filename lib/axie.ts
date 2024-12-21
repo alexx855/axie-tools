@@ -3,7 +3,7 @@ import { getAxieContract } from "./contracts";
 
 export async function getAxieIdsFromAccount(address: string, provider: ethers.providers.JsonRpcProvider) {
   // get axie contract
-  const axieContract = await getAxieContract(provider)
+  const axieContract = getAxieContract(provider)
 
   // get axies balance for the address
   const axiesBalance = await axieContract.balanceOf(address)

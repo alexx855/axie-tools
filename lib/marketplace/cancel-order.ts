@@ -1,15 +1,11 @@
-import { ethers } from "ethers";
+import { ethers, utils } from "ethers";
 import { apiRequest } from "../utils"
-import {
-  GRAPHQL_URL
-} from "../constants"
-import { ORDER_EXCHANGE_LOGIC, APP_AXIE_ORDER_EXCHANGE, MARKETPLACE_GATEWAY_V2, MARKET_GATEWAY, WRAPPED_ETHER } from "@roninbuilders/contracts";
-
+import { APP_AXIE_ORDER_EXCHANGE, MARKETPLACE_GATEWAY_V2, MARKET_GATEWAY, WRAPPED_ETHER } from "@roninbuilders/contracts";
 
 export default async function cancelMarketplaceOrder(
-  axieId: string,
+  axieId: number,
   signer: ethers.Signer,
-  skymavisApiKey: string,
+  skyMavisApiKey?: string,
 ) {
 
   // query the marketplace for the axie order
@@ -93,15 +89,19 @@ export default async function cancelMarketplaceOrder(
     }
   }
 
-  const headers = {
-    'x-api-key': skymavisApiKey
-  }
-
   const variables = {
     axieId
   }
 
-  const result = await apiRequest<IMarketplaceAxieOrderResult>(GRAPHQL_URL, JSON.stringify({ query, variables }), headers)
+  const graphqlUrl = skyMavisApiKey
+    ? "https://api-gateway.skymavis.com/graphql/axie-marketplace"
+    : "https://graphql-gateway.axieinfinity.com/graphql"
+
+  const headers: Record<string, string> = {
+    ...skyMavisApiKey && { 'x-api-key': skyMavisApiKey }
+  }
+
+  const result = await apiRequest<IMarketplaceAxieOrderResult>(graphqlUrl, JSON.stringify({ query, variables }), headers)
   if (result === null || result.data === undefined || result.data.axie.order == null) {
     console.log(`Axie ${axieId} is not for sale`)
     return false
@@ -110,7 +110,7 @@ export default async function cancelMarketplaceOrder(
   const { order } = result.data.axie
 
   // marketplace order exchange contract
-  const marketAbi = new ethers.utils.Interface(MARKET_GATEWAY.abi);
+  const marketAbi = new utils.Interface(MARKET_GATEWAY.abi);
   const contract = new ethers.Contract(
     MARKETPLACE_GATEWAY_V2.address,
     marketAbi,
@@ -142,16 +142,16 @@ export default async function cancelMarketplaceOrder(
   ]
 
   // Encode the orderData values
-  const encodedOrderData = await ethers.utils.defaultAbiCoder.encode(orderTypes, [orderData]);
+  const encodedOrderData = utils.defaultAbiCoder.encode(orderTypes, [orderData]);
 
   // Encode the values again for the cancelOrder function
-  const axieOrderExchangeInterface = new ethers.utils.Interface(APP_AXIE_ORDER_EXCHANGE.abi);
+  const axieOrderExchangeInterface = new utils.Interface(APP_AXIE_ORDER_EXCHANGE.abi);
   const orderExchangeData = axieOrderExchangeInterface.encodeFunctionData('cancelOrder', [
     encodedOrderData
   ])
 
   // Send the transaction
-  const tx = await contract.interactWith('ORDER_EXCHANGE', orderExchangeData, { gasPrice: 20000000000 })
+  const tx = await contract.interactWith('ORDER_EXCHANGE', orderExchangeData, { gasPrice: utils.parseUnits('20', 'gwei') })
   const receipt = await tx.wait()
   return receipt
 }

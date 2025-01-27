@@ -1,78 +1,84 @@
-import { ethers } from 'ethers';
+import { parseEther, Wallet, JsonRpcProvider } from "ethers";
 import {
   getAxieIdsFromAccount,
   approveMarketplaceContract,
   createMarketplaceOrder,
 } from "axie-tools";
-import 'dotenv/config'
+import "dotenv/config";
 
 async function auction() {
   if (!process.env.PRIVATE_KEY || !process.env.MARKETPLACE_ACCESS_TOKEN) {
-    throw new Error('Please set PRIVATE_KEY and MARKETPLACE_ACCESS_TOKEN in a .env file')
+    throw new Error(
+      "Please set PRIVATE_KEY and MARKETPLACE_ACCESS_TOKEN in a .env file",
+    );
   }
 
-  const provider = new ethers.providers.JsonRpcProvider('https://api.roninchain.com/rpc');
-  const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider)
-  const address = await wallet.getAddress()
+  const provider = new JsonRpcProvider("https://api.roninchain.com/rpc");
+  const wallet = new Wallet(process.env.PRIVATE_KEY, provider);
+  const address = await wallet.getAddress();
 
   // Get CLI args: axieId startPrice endPrice durationInHours
-  const args = process.argv.slice(2)
-  const axieId = parseInt(args[0], 10)
-  const startPrice = args[1]
-  const endPrice = args[2]
-  const durationHours = parseInt(args[3], 10)
+  const args = process.argv.slice(2);
+  const axieId = parseInt(args[0], 10);
+  const startPrice = args[1];
+  const endPrice = args[2];
+  const durationHours = parseInt(args[3], 10);
 
   if (isNaN(axieId) || axieId < 1) {
-    throw new Error('Please provide a valid axieID as the first argument')
+    throw new Error("Please provide a valid axieID as the first argument");
   }
   if (!startPrice || !endPrice || isNaN(startPrice) || isNaN(endPrice)) {
-    throw new Error('Please provide valid start and end prices in ETH')
+    throw new Error("Please provide valid start and end prices in ETH");
   }
   if (isNaN(durationHours) || durationHours < 1 || durationHours > 168) {
-    throw new Error('Please provide a valid duration in hours (1-168)')
+    throw new Error("Please provide a valid duration in hours (1-168)");
   }
 
   // Check axie ownership
-  const axieIds = await getAxieIdsFromAccount(address, provider)
+  const axieIds = await getAxieIdsFromAccount(address, provider);
   if (!axieIds.includes(axieId)) {
-    throw new Error(`Axie ${axieId} is not owned by ${address}`)
+    throw new Error(`Axie ${axieId} is not owned by ${address}`);
   }
 
   // Ensure marketplace contract is approved
-  await approveMarketplaceContract(wallet)
+  await approveMarketplaceContract(wallet);
 
   // Prepare auction data
-  const currentBlock = await provider.getBlock('latest')
-  const startedAt = currentBlock.timestamp
-  const endedAt = startedAt + (durationHours * 3600) // convert hours to seconds
-  const expiredAt = startedAt + 15634800 // ~6 months (max allowed)
+  const currentBlock = await provider.getBlock("latest");
+  const startedAt = currentBlock.timestamp;
+  const endedAt = startedAt + durationHours * 3600; // convert hours to seconds
+  const expiredAt = startedAt + 15634800; // ~6 months (max allowed)
 
   const orderData = {
     address,
     axieId: axieId.toString(),
-    basePrice: ethers.utils.parseEther(startPrice).toString(),
-    endedPrice: ethers.utils.parseEther(endPrice).toString(),
+    basePrice: parseEther(startPrice).toString(),
+    endedPrice: parseEther(endPrice).toString(),
     startedAt,
     endedAt,
     expiredAt,
-  }
+  };
 
   // Create the auction
   const result = await createMarketplaceOrder(
     orderData,
     process.env.MARKETPLACE_ACCESS_TOKEN,
-    wallet
-  )
+    wallet,
+  );
 
   if (result === null || result.errors || !result.data) {
-    throw new Error(result?.errors?.[0]?.message || 'Unknown error creating auction')
+    throw new Error(
+      result?.errors?.[0]?.message || "Unknown error creating auction",
+    );
   }
 
-  console.log(`✅ Created auction for Axie ${axieId}!`)
-  console.log(`Start price: ${startPrice} ETH`)
-  console.log(`End price: ${endPrice} ETH`)
-  console.log(`Duration: ${durationHours} hours`)
-  console.log(`Current price in USD: ${result.data.createOrder.currentPriceUsd}`)
+  console.log(`✅ Created auction for Axie ${axieId}!`);
+  console.log(`Start price: ${startPrice} ETH`);
+  console.log(`End price: ${endPrice} ETH`);
+  console.log(`Duration: ${durationHours} hours`);
+  console.log(
+    `Current price in USD: ${result.data.createOrder.currentPriceUsd}`,
+  );
 }
 
-auction().catch(console.error)
+auction().catch(console.error);

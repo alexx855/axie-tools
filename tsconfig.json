@@ -8,16 +8,8 @@
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "outDir": "dist",
+    "outDir": "dist"
   },
-  "include": [
-    "lib/**/*.ts",
-    "lib/**/*.json",
-    "index.ts",
-    "cli.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "scripts"
-  ],
+  "include": ["lib/**/*.ts", "lib/**/*.json", "index.ts", "cli.ts"],
+  "exclude": ["node_modules", "scripts"]
 }

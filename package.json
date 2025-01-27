@@ -1,11 +1,12 @@
 {
   "name": "axie-tools",
-  "version": "1.5.0",
-  "description": "A set of tools to make it easier for developers to interact with Axies on the Ronin network and the maketplace.",
+  "version": "1.6.0",
+  "description": "TypeScript library and CLI tool for interacting with Axie Infinity marketplace and NFTs on Ronin network. Features marketplace operations (buy/sell/delist), batch transfers, and wallet information.",
   "scripts": {
     "build": "tsc",
     "start": "node dist/cli.js",
     "dev": "bun cli.ts",
+    "format": "npx @biomejs/biome format --write",
     "prepublishOnly": "npm run build"
   },
   "main": "dist/index.js",
@@ -21,23 +22,16 @@
     "node": ">=18.0.0"
   },
   "keywords": [
-    "Axie",
-    "Infinity",
-    "Bot",
-    "Ronin",
-    "Marketplace",
-    "Access Token",
-    "Account",
-    "Buy",
-    "Order",
-    "Unlist",
-    "Developer",
-    "Tool",
-    "Crypto",
-    "Blockchain",
-    "Javascript",
-    "Typescript",
-    "NFT"
+    "axie",
+    "infinity",
+    "axie-infinity",
+    "bot",
+    "ronin",
+    "marketplace",
+    "developer",
+    "tool",
+    "javascript",
+    "typescript"
   ],
   "author": {
     "name": "Alex Pedersen",
@@ -50,16 +44,17 @@
   },
   "homepage": "https://github.com/alexx855/axie-tools#readme",
   "bin": {
-    "axie-tools": "./dist/cli.js"
+    "axie-tools": "dist/cli.js"
   },
   "devDependencies": {
-    "@types/node": "^18.15.11",
-    "dotenv": "^16.3.1"
+    "@biomejs/biome": "1.9.4",
+    "@types/node": "^18.15.11"
   },
   "dependencies": {
     "@inquirer/prompts": "^7.2.0",
     "@roninbuilders/contracts": "^0.5.0",
-    "ethers": "^5.7.0",
+    "dotenv": "^16.3.1",
+    "ethers": "^6.13.4",
     "typescript": "^5.1.6"
   }
 }

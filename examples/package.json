@@ -13,8 +13,8 @@
   "type": "module",
   "license": "ISC",
   "dependencies": {
-    "axie-tools": "1.5.0",
+    "axie-tools": "^1.6.0",
     "dotenv": "^16.3.1",
-    "ethers": "^5.7.0"
+    "ethers": "^6.13.4"
   }
 }

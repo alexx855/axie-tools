@@ -52,7 +52,7 @@
   },
   "dependencies": {
     "@inquirer/prompts": "^7.2.0",
-    "@roninbuilders/contracts": "^0.5.0",
+    "@roninbuilders/contracts": "^0.6.8",
     "dotenv": "^16.3.1",
     "ethers": "^6.13.4",
     "typescript": "^5.1.6"

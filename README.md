@@ -1,6 +1,6 @@
 # Axie tools
 
-TypeScript library and CLI tool for interacting with Axie Infinity marketplace and NFTs on Ronin network. Features marketplace operations (buy/sell/delist), batch transfers, and wallet information.
+TypeScript library and CLI tool for interacting with the Axie Infinity marketplace and NFTs on the Ronin network. Features marketplace operations (create marketplace orders – fixed-price & auction, cancel orders, settle orders), batch transfers, approval utilities, and wallet information.
 
 You only need Node.js. Install it from [Node.js official download page](https://nodejs.org/en/download/prebuilt-binaries/)
 
@@ -36,6 +36,7 @@ Example usage:
 
 - Settle order (buy axie): [complete example code](https://github.com/alexx855/axie-tools/tree/main/examples/settle-order.js)
 - Create order (list axie for sale): [complete example code](https://github.com/alexx855/axie-tools/tree/main/examples/create-order.js)
+- Create auction (list axie for auction): [complete example code](https://github.com/alexx855/axie-tools/tree/main/examples/create-order-auction.js)
 - Cancel order (delist axie): [complete example code](https://github.com/alexx855/axie-tools/tree/main/examples/cancel-order.js)
 - Transfer all axies: [complete example code](https://github.com/alexx855/axie-tools/tree/main/examples/transfer-all.js)
 
@@ -67,6 +68,7 @@ This will present an interactive menu with the following options:
 - Cancel order (delist axie)
 - Cancel all orders (delist all axies)
 - Create order (list axie for sale)
+- Create auction (list axie for auction)
 - Create orders for all axies (list all)
 - Transfer axie
 - Transfer all axies
@@ -100,26 +102,15 @@ Feel free to open an issue or a pull request if you have any error, questions or
 
 ### Testing
 
-To run the tests, use the `bun test` command. You can also pass environment variables to the test command to test specific scenarios.
-
-To set a timeout for each test, use the `--timeout` flag (in milliseconds). The default timeout is 5000ms (5 seconds).
-
-#### Test Examples
-
-For example, to test creating an order for a specific Axie with a 30-second timeout:
+Run tests with bun. Set the `AXIE_ID` and `PRICE` environment variables and specify a test file. Default timeout is 5000ms; override with `--timeout`. Examples:
 
 ```shell
+# Create order (list axie for sale)
 AXIE_ID=111111 PRICE=0.1 bun test tests/create-order.test.ts --timeout 30000
-```
 
-To test cancelling an order:
-
-```shell
+# Cancel order (delist axie)
 AXIE_ID=111111 PRICE=0.1 bun test tests/cancel-order.test.ts --timeout 30000
-```
 
-To test settling an order (buying):
-
-```shell
+# Settle order (buy axie)
 AXIE_ID=111111 PRICE=0.1 bun test tests/settle-order.test.ts --timeout 30000
 ```

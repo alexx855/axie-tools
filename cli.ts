@@ -98,6 +98,7 @@ async function main() {
             value: "cancel-all",
           },
           { title: "Create order (list axie)", value: "create" },
+          { title: "Create auction (list axie for auction)", value: "create-auction" },
           {
             title: "Create orders for all axies (list all)",
             value: "create-all",
@@ -235,6 +236,88 @@ async function main() {
 
           console.log(
             `✅ Created order for Axie ${axieId}! Current price in USD: ${result.data.createOrder.currentPriceUsd}`,
+          );
+          break;
+        }
+        case "create-auction": {
+          const axieId = await getAxieId();
+          if (!axieId) break;
+
+          const token = await ensureMarketplaceToken();
+          
+          const startPriceResponse = await prompts({
+            type: "text",
+            name: "startPrice",
+            message: "Enter starting price in ETH",
+            validate: (value: string) => parseEther(value) > 0n,
+          });
+          const startPrice = startPriceResponse.startPrice;
+          if (!startPrice) {
+            console.log("❌ Starting price is required");
+            break;
+          }
+
+          const endPriceResponse = await prompts({
+            type: "text",
+            name: "endPrice",
+            message: "Enter ending price in ETH",
+            validate: (value: string) => parseEther(value) > 0n,
+          });
+          const endPrice = endPriceResponse.endPrice;
+          if (!endPrice) {
+            console.log("❌ Ending price is required");
+            break;
+          }
+
+          const durationResponse = await prompts({
+            type: "number",
+            name: "duration",
+            message: "Enter auction duration in hours (1-168)",
+            validate: (value: number) => value >= 1 && value <= 168,
+          });
+          const durationHours = durationResponse.duration;
+          if (!durationHours) {
+            console.log("❌ Duration is required");
+            break;
+          }
+
+          await approveMarketplaceContract(wallet);
+
+          const currentBlock = await provider.getBlock("latest");
+          const startedAt = currentBlock!.timestamp;
+          const endedAt = startedAt + durationHours * 3600; // convert hours to seconds
+          const expiredAt = startedAt + 15634800; // ~6 months
+
+          const orderData = {
+            address,
+            axieId: axieId.toString(),
+            basePrice: parseEther(startPrice).toString(),
+            endedPrice: parseEther(endPrice).toString(),
+            startedAt,
+            endedAt,
+            expiredAt,
+          };
+
+          const result = await createMarketplaceOrder(
+            orderData,
+            token,
+            wallet,
+            skyMavisApiKey,
+          );
+          if (result === null || result.errors || !result.data) {
+            console.error(
+              "❌ Error:",
+              result?.errors?.[0]?.message || "Unknown error",
+            );
+            break;
+          }
+
+          console.log(`✅ Created auction for Axie ${axieId}!`);
+          console.log(`Start price: ${startPrice} ETH`);
+          console.log(`End price: ${endPrice} ETH`);
+          console.log(`Duration: ${durationHours} hours`);
+          console.log(
+            `Current price in USD: ${result.data.createOrder.currentPriceUsd}`,
           );
           break;
         }

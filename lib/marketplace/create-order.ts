@@ -32,7 +32,7 @@ export default async function createMarketplaceOrder(
   signer: Wallet,
   skyMavisApiKey: string,
 ) {
-  const { address, axieId, basePrice, startedAt, expiredAt } = orderData;
+  const { address, axieId, basePrice, endedPrice, startedAt, endedAt, expiredAt } = orderData;
 
   const types = {
     Asset: [
@@ -80,8 +80,8 @@ export default async function createMarketplaceOrder(
     paymentToken: WRAPPED_ETHER.address,
     startedAt: startedAt.toString(),
     basePrice: basePrice,
-    endedAt: "0",
-    endedPrice: "0",
+    endedAt: endedAt.toString(),
+    endedPrice: endedPrice,
     expectedState: "0",
     nonce: "0",
     marketFeePercentage: "425",
@@ -164,9 +164,9 @@ export default async function createMarketplaceOrder(
       kind: "Sell",
       expectedState: "",
       basePrice: basePrice,
-      endedPrice: "0",
+      endedPrice: endedPrice,
       startedAt: startedAt,
-      endedAt: 0,
+      endedAt: endedAt,
       expiredAt: expiredAt,
     },
     signature,

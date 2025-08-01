@@ -22,7 +22,7 @@ export async function transferAxie(
     addressFrom,
     addressTo.replace("ronin:", "0x").toLowerCase(),
     formattedAxieId,
-    { gasPrice: parseUnits("20", "gwei") },
+    { gasPrice: parseUnits("25", "gwei") },
   );
 
   const receipt = await tx.wait();
@@ -56,17 +56,23 @@ export async function batchTransferAxies(
     throw new Error("You must provide at least one axie ID");
   }
 
+  // Ensure proper address format (remove ronin: prefix if present, ensure 0x prefix, lowercase)
+  const normalizedAddressTo = addressTo.replace("ronin:", "").toLowerCase();
+  const finalAddressTo = normalizedAddressTo.startsWith("0x")
+    ? normalizedAddressTo
+    : `0x${normalizedAddressTo}`;
+
+  console.log(
+    `Using addresses: from=${addressFrom}, to=${finalAddressTo}, contract=${axieContractAddress}`,
+  );
+  console.log(`Axie IDs: ${axies.join(", ")}`);
+
   // batch Transfer, call the function this way since it's overloaded
   const tx = await writeBatchTransferContract[
     "safeBatchTransfer(address,uint256[],address)"
-  ](
-    axieContractAddress,
-    axies,
-    addressTo.replace("ronin:", "0x").toLowerCase(),
-    {
-      gasPrice: parseUnits("20", "gwei"),
-    },
-  );
+  ](axieContractAddress, axies, finalAddressTo, {
+    gasPrice: parseUnits("25", "gwei"),
+  });
   // wait for tx to be mined and get receipt
   const receipt = await tx.wait();
   return receipt;

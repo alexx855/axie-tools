@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { select, input, confirm, password } from "@inquirer/prompts";
+import prompts from "prompts";
 import { JsonRpcProvider, Wallet, parseEther, isHexString } from "ethers";
 import { getAxieIdsFromAccount } from "./lib/axie";
 import { refreshToken } from "./lib/marketplace/access-token";
@@ -8,7 +8,7 @@ import {
   askToContinue,
   ensureMarketplaceToken,
   getAccountInfo,
-  getAxieId,
+  createProvider,
 } from "./lib/utils";
 import {
   approveMarketplaceContract,
@@ -19,45 +19,62 @@ import cancelMarketplaceOrder from "./lib/marketplace/cancel-order";
 import createMarketplaceOrder from "./lib/marketplace/create-order";
 import "dotenv/config";
 
-async function main() {
-  // Ask for Skymavis API key at startup if not in env (optional)
-  let skyMavisApiKey = process.env.SKYMAVIS_DAPP_KEY;
-  if (!skyMavisApiKey) {
-    const shouldProvideKey = await confirm({
-      message:
-        "🔑 Would you like to provide a Skymavis DApp API key? (Recommended for better rate limits)",
-      default: false,
-    });
+const getAxieId = async () => {
+  const response = await prompts({
+    type: "number",
+    name: "axieId",
+    message: "🆔 Enter Axie ID:",
+    validate: (value: number) => value !== undefined && !isNaN(value),
+  });
+  if (response.axieId === undefined) {
+    console.log("❌ Invalid Axie ID!");
+    return null;
+  }
+  return response.axieId;
+};
 
-    if (shouldProvideKey) {
-      skyMavisApiKey = await input({
-        message: "🔑 Enter your Skymavis DApp API key:",
-        validate: (value) => value !== undefined && value !== "",
-      });
+async function main() {
+  // Require Skymavis API key
+  let skyMavisApiKey = process.env.SKYMAVIS_API_KEY;
+  if (!skyMavisApiKey) {
+    const response = await prompts({
+      type: "text",
+      name: "apiKey",
+      message:
+        "🔑 Enter your Skymavis project API key (get from https://developers.roninchain.com/console/applications/):",
+      validate: (value: string) => value !== undefined && value !== "",
+    });
+    skyMavisApiKey = response.apiKey;
+    if (!skyMavisApiKey) {
+      console.log("❌ API key is required");
+      process.exit(1);
     }
   }
 
   // Check for PRIVATE_KEY before the main loop
   let privateKey = process.env.PRIVATE_KEY;
   if (!privateKey) {
-    privateKey = await password({
+    const response = await prompts({
+      type: "password",
+      name: "privateKey",
       message: "🔐 Enter your private key:",
-      validate: (value) => {
+      validate: (value: string) => {
         if (!value) return false;
         // Private keys are 32 bytes (64 characters) + optional "0x" prefix
         return isHexString(value, 32) || isHexString(`0x${value}`, 32);
       },
     });
+    privateKey = response.privateKey;
+    if (!privateKey) {
+      console.log("❌ Private key is required");
+      process.exit(1);
+    }
     // Ensure "0x" prefix
     privateKey = privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`;
   }
 
-  // Initialize provider with the API key from above
-  const provider = new JsonRpcProvider(
-    skyMavisApiKey
-      ? `https://api-gateway.skymavis.com/rpc?apikey=${skyMavisApiKey}`
-      : "https://api.roninchain.com/rpc",
-  );
+  // Initialize provider with the required API key
+  const provider = createProvider(skyMavisApiKey);
 
   // Initialize wallet with the previously obtained private key
   const wallet = new Wallet(privateKey, provider);
@@ -65,22 +82,35 @@ async function main() {
 
   while (true) {
     try {
-      const action = await select({
+      const response = await prompts({
+        type: "select",
+        name: "action",
         message: "What would you like to do?",
         choices: [
-          { name: "Get account info", value: "account" },
-          { name: "Refresh access token", value: "refresh-token" },
-          { name: "Approve WETH", value: "approve-weth" },
-          { name: "Approve marketplace", value: "approve-marketplace" },
-          { name: "Buy axie", value: "buy" },
-          { name: "Delist axie", value: "delist" },
-          { name: "Delist all axies", value: "delist-all" },
-          { name: "List axie", value: "list" },
-          { name: "List all axies", value: "list-all" },
-          { name: "Transfer axie", value: "transfer" },
-          { name: "Transfer all axies", value: "transfer-all" },
+          { title: "Get account info", value: "account" },
+          { title: "Refresh access token", value: "refresh-token" },
+          { title: "Approve WETH", value: "approve-weth" },
+          { title: "Approve marketplace", value: "approve-marketplace" },
+          { title: "Settle order (buy axie)", value: "settle" },
+          { title: "Cancel order (delist axie)", value: "cancel" },
+          {
+            title: "Cancel all orders (delist all axies)",
+            value: "cancel-all",
+          },
+          { title: "Create order (list axie)", value: "create" },
+          {
+            title: "Create orders for all axies (list all)",
+            value: "create-all",
+          },
+          { title: "Transfer axie", value: "transfer" },
+          { title: "Transfer all axies", value: "transfer-all" },
         ],
       });
+      const action = response.action;
+      if (!action) {
+        console.log("❌ Action selection cancelled");
+        break;
+      }
 
       switch (action) {
         case "account": {
@@ -106,10 +136,17 @@ async function main() {
           let refreshTokenValue = process.env.MARKETPLACE_REFRESH_TOKEN;
 
           if (!refreshTokenValue) {
-            refreshTokenValue = await input({
+            const response = await prompts({
+              type: "text",
+              name: "refreshToken",
               message: "Enter refresh token",
-              validate: (value) => value.length > 0,
+              validate: (value: string) => value.length > 0,
             });
+            refreshTokenValue = response.refreshToken;
+            if (!refreshTokenValue) {
+              console.log("❌ Refresh token is required");
+              break;
+            }
           }
 
           const result = await refreshToken(refreshTokenValue);
@@ -129,7 +166,7 @@ async function main() {
           await approveMarketplaceContract(wallet);
           break;
         }
-        case "buy": {
+        case "settle": {
           const token = await ensureMarketplaceToken();
           const axieId = await getAxieId();
           if (!axieId) break;
@@ -138,7 +175,7 @@ async function main() {
             axieId,
             wallet,
             token,
-            process.env.SKYMAVIS_DAPP_KEY, // This can be undefined
+            skyMavisApiKey,
           );
           if (receipt) {
             console.log("🚀 Transaction successful! Hash:", receipt.hash);
@@ -149,15 +186,22 @@ async function main() {
           }
           break;
         }
-        case "list": {
+        case "create": {
           const axieId = await getAxieId();
           if (!axieId) break;
 
           const token = await ensureMarketplaceToken();
-          const basePrice = await input({
+          const response = await prompts({
+            type: "text",
+            name: "basePrice",
             message: "Enter base price in ETH",
-            validate: (value) => parseEther(value) > 0n,
+            validate: (value: string) => parseEther(value) > 0n,
           });
+          const basePrice = response.basePrice;
+          if (!basePrice) {
+            console.log("❌ Base price is required");
+            break;
+          }
 
           await approveMarketplaceContract(wallet);
 
@@ -179,7 +223,7 @@ async function main() {
             orderData,
             token,
             wallet,
-            process.env.SKYMAVIS_DAPP_KEY, // This can be undefined
+            skyMavisApiKey,
           );
           if (result === null || result.errors || !result.data) {
             console.error(
@@ -190,16 +234,23 @@ async function main() {
           }
 
           console.log(
-            `✅ Listed Axie ${axieId}! Current price in USD: ${result.data.createOrder.currentPriceUsd}`,
+            `✅ Created order for Axie ${axieId}! Current price in USD: ${result.data.createOrder.currentPriceUsd}`,
           );
           break;
         }
-        case "list-all": {
+        case "create-all": {
           const token = await ensureMarketplaceToken();
-          const basePrice = await input({
+          const response = await prompts({
+            type: "text",
+            name: "basePrice",
             message: "Enter base price in ETH (for all Axies)",
-            validate: (value) => parseEther(value) > 0n,
+            validate: (value: string) => parseEther(value) > 0n,
           });
+          const basePrice = response.basePrice;
+          if (!basePrice) {
+            console.log("❌ Base price is required");
+            break;
+          }
 
           await approveMarketplaceContract(wallet);
 
@@ -231,34 +282,34 @@ async function main() {
               orderData,
               token,
               wallet,
-              process.env.SKYMAVIS_DAPP_KEY,
+              skyMavisApiKey,
             );
 
             if (result === null || result.errors || !result.data) {
               console.error(
-                `❌ Error listing Axie ${axieId}:`,
+                `❌ Error creating order for Axie ${axieId}:`,
                 result?.errors?.[0]?.message || "Unknown error",
               );
               continue;
             }
 
             console.log(
-              `✅ Listed Axie ${axieId}! Current price in USD: ${result.data.createOrder.currentPriceUsd}`,
+              `✅ Created order for Axie ${axieId}! Current price in USD: ${result.data.createOrder.currentPriceUsd}`,
             );
           }
           break;
         }
-        case "delist": {
+        case "cancel": {
           const axieId = await getAxieId();
           if (!axieId) break;
 
           const receipt = await cancelMarketplaceOrder(
             axieId,
             wallet,
-            process.env.SKYMAVIS_DAPP_KEY, // This can be undefined
+            skyMavisApiKey,
           );
           if (receipt) {
-            console.log("✅ Axie delisted! Transaction hash:", receipt.hash);
+            console.log("✅ Order cancelled! Transaction hash:", receipt.hash);
             console.log(
               "🔗 View transaction: https://app.roninchain.com/tx/" +
                 receipt.hash,
@@ -266,31 +317,41 @@ async function main() {
           }
           break;
         }
-        case "delist-all": {
+        case "cancel-all": {
           const fromAddress = await wallet.getAddress();
           let axieIds = await getAxieIdsFromAccount(fromAddress, provider);
 
           if (axieIds.length > 100) {
             console.log(
-              "⚠️ Warning: Can only transfer up to 100 Axies at once, only delisting the first 100",
+              "⚠️ Warning: Can only cancel up to 100 orders at once, only cancelling the first 100",
             );
             axieIds = axieIds.slice(0, 100);
           }
 
-          const receipt = await batchTransferAxies(
-            wallet,
-            fromAddress,
-            axieIds,
-          );
-          if (receipt) {
-            console.log("✅ Axies delisted! Transaction hash:", receipt.hash);
-            console.log(
-              "🔗 View transaction: https://app.roninchain.com/tx/" +
-                receipt.hash,
-            );
-          } else {
-            console.log("❌ Error delisting Axies");
+          // Cancel orders for each axie individually
+          let successCount = 0;
+          for (const axieId of axieIds) {
+            try {
+              const receipt = await cancelMarketplaceOrder(
+                axieId,
+                wallet,
+                skyMavisApiKey,
+              );
+              if (receipt) {
+                console.log(
+                  `✅ Cancelled order for Axie ${axieId}! Transaction hash: ${receipt.hash}`,
+                );
+                successCount++;
+              }
+            } catch (error) {
+              console.log(
+                `❌ Error cancelling order for Axie ${axieId}: ${error instanceof Error ? error.message : error}`,
+              );
+            }
           }
+          console.log(
+            `✅ Successfully cancelled ${successCount} out of ${axieIds.length} orders`,
+          );
           break;
         }
 
@@ -298,10 +359,17 @@ async function main() {
           const axieId = await getAxieId();
           if (!axieId) break;
 
-          const address = await input({
+          const response = await prompts({
+            type: "text",
+            name: "address",
             message: "Enter recipient address",
-            validate: (value) => value.length > 0,
+            validate: (value: string) => value.length > 0,
           });
+          const address = response.address;
+          if (!address) {
+            console.log("❌ Recipient address is required");
+            break;
+          }
           const receipt = await transferAxie(wallet, address, axieId);
           if (receipt) {
             console.log("✅ Axie transferred! Transaction hash:", receipt.hash);
@@ -309,10 +377,17 @@ async function main() {
           break;
         }
         case "transfer-all": {
-          const address = await input({
+          const response = await prompts({
+            type: "text",
+            name: "address",
             message: "Enter recipient address",
-            validate: (value) => value.length > 0,
+            validate: (value: string) => value.length > 0,
           });
+          const address = response.address;
+          if (!address) {
+            console.log("❌ Recipient address is required");
+            break;
+          }
 
           let axieIds = await getAxieIdsFromAccount(address, provider);
 

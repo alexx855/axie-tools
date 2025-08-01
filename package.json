@@ -1,13 +1,20 @@
 {
   "name": "axie-tools",
   "version": "1.6.0",
+  "type": "module",
   "description": "TypeScript library and CLI tool for interacting with Axie Infinity marketplace and NFTs on Ronin network. Features marketplace operations (buy/sell/delist), batch transfers, and wallet information.",
   "scripts": {
-    "build": "tsc",
+    "build": "npm run build:lib && npm run build:cli",
+    "build:lib": "esbuild index.ts --bundle --platform=node --format=esm --outfile=dist/index.js --external:ethers --external:@roninbuilders/contracts --external:prompts && tsc --emitDeclarationOnly",
+    "build:cli": "esbuild cli.ts --bundle --platform=node --format=esm --outfile=dist/cli.js --external:ethers --external:@roninbuilders/contracts --external:dotenv --external:prompts",
+    "postbuild": "chmod +x dist/cli.js",
     "start": "node dist/cli.js",
     "dev": "bun cli.ts",
     "format": "npx @biomejs/biome format --write",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test:create-order": "AXIE_ID=<$AXIE_ID> PRICE=<$PRICE> bun test tests/create-order.test.ts --timeout 30000",
+    "test:cancel-order": "AXIE_ID=<$AXIE_ID> PRICE=<$PRICE> bun test tests/cancel-order.test.ts --timeout 30000",
+    "test:settle-order": "AXIE_ID=<$AXIE_ID> PRICE=<$PRICE> bun test tests/settle-order.test.ts --timeout 30000"
   },
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -19,7 +26,7 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22"
   },
   "keywords": [
     "axie",
@@ -48,10 +55,13 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@types/node": "^18.15.11"
+    "@types/bun": "^1.2.19",
+    "@types/node": "^18.15.11",
+    "@types/prompts": "^2.4.9",
+    "esbuild": "^0.20.0"
   },
   "dependencies": {
-    "@inquirer/prompts": "^7.2.0",
+    "prompts": "^2.4.2",
     "@roninbuilders/contracts": "^0.6.8",
     "dotenv": "^16.3.1",
     "ethers": "^6.13.4",

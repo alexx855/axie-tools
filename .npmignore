@@ -1,0 +1,18 @@
+# Development files
+.env
+.env.example
+.nvmrc
+.npmrc
+tsconfig.json
+biome.json
+
+# Test files
+tests/
+
+# Development dependencies
+node_modules/
+.git/
+
+# OS files
+.DS_Store
+Thumbs.db

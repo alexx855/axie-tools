@@ -1,10 +1,8 @@
 import { Wallet } from "ethers";
-import {
-  MARKETPLACE_GATEWAY_V2,
-  AXIE_PROXY,
-  WRAPPED_ETHER,
-} from "@roninbuilders/contracts";
-import { apiRequest } from "../utils";
+import AXIE_PROXY from "@roninbuilders/contracts/axie_proxy";
+import WRAPPED_ETHER from "@roninbuilders/contracts/wrapped_ether";
+import MARKETPLACE_GATEWAY_PROXY from "@roninbuilders/contracts/market_gateway_proxy";
+import { apiRequest, getMarketplaceApi } from "../utils";
 
 export interface ICreateOrderData {
   address: string;
@@ -32,86 +30,30 @@ export default async function createMarketplaceOrder(
   orderData: ICreateOrderData,
   accessToken: string,
   signer: Wallet,
-  skyMavisApiKey?: string,
+  skyMavisApiKey: string,
 ) {
-  const {
-    address,
-    axieId,
-    basePrice,
-    endedPrice,
-    startedAt,
-    endedAt,
-    expiredAt,
-  } = orderData;
+  const { address, axieId, basePrice, startedAt, expiredAt } = orderData;
 
   const types = {
     Asset: [
-      {
-        name: "erc",
-        type: "uint8",
-      },
-      {
-        name: "addr",
-        type: "address",
-      },
-      {
-        name: "id",
-        type: "uint256",
-      },
-      {
-        name: "quantity",
-        type: "uint256",
-      },
+      { name: "erc", type: "uint8" },
+      { name: "addr", type: "address" },
+      { name: "id", type: "uint256" },
+      { name: "quantity", type: "uint256" },
     ],
     Order: [
-      {
-        name: "maker",
-        type: "address",
-      },
-      {
-        name: "kind",
-        type: "uint8",
-      },
-      {
-        name: "assets",
-        type: "Asset[]",
-      },
-      {
-        name: "expiredAt",
-        type: "uint256",
-      },
-      {
-        name: "paymentToken",
-        type: "address",
-      },
-      {
-        name: "startedAt",
-        type: "uint256",
-      },
-      {
-        name: "basePrice",
-        type: "uint256",
-      },
-      {
-        name: "endedAt",
-        type: "uint256",
-      },
-      {
-        name: "endedPrice",
-        type: "uint256",
-      },
-      {
-        name: "expectedState",
-        type: "uint256",
-      },
-      {
-        name: "nonce",
-        type: "uint256",
-      },
-      {
-        name: "marketFeePercentage",
-        type: "uint256",
-      },
+      { name: "maker", type: "address" },
+      { name: "kind", type: "uint8" },
+      { name: "assets", type: "Asset[]" },
+      { name: "expiredAt", type: "uint256" },
+      { name: "paymentToken", type: "address" },
+      { name: "startedAt", type: "uint256" },
+      { name: "basePrice", type: "uint256" },
+      { name: "endedAt", type: "uint256" },
+      { name: "endedPrice", type: "uint256" },
+      { name: "expectedState", type: "uint256" },
+      { name: "nonce", type: "uint256" },
+      { name: "marketFeePercentage", type: "uint256" },
     ],
   };
 
@@ -119,10 +61,11 @@ export default async function createMarketplaceOrder(
     name: "MarketGateway",
     version: "1",
     chainId: "2020",
-    verifyingContract: MARKETPLACE_GATEWAY_V2.address,
+    verifyingContract: MARKETPLACE_GATEWAY_PROXY.address,
   };
 
-  const order = {
+  // This is the object that gets signed, structured to match the working curl example
+  const orderToSign = {
     maker: address,
     kind: "1",
     assets: [
@@ -130,21 +73,21 @@ export default async function createMarketplaceOrder(
         erc: "1",
         addr: AXIE_PROXY.address,
         id: axieId,
-        quantity: "0", // ??? not sure why this is 0, maybbe its for items
+        quantity: "0",
       },
     ],
-    expiredAt,
+    expiredAt: expiredAt.toString(),
     paymentToken: WRAPPED_ETHER.address,
-    startedAt,
-    basePrice,
-    endedAt,
-    endedPrice,
+    startedAt: startedAt.toString(),
+    basePrice: basePrice,
+    endedAt: "0",
+    endedPrice: "0",
     expectedState: "0",
-    nonce: "0", // ?? use nonce from the wallet
+    nonce: "0",
     marketFeePercentage: "425",
   };
 
-  const signature = await signer.signTypedData(domain, types, order);
+  const signature = await signer.signTypedData(domain, types, orderToSign);
 
   const query = `
         mutation CreateOrder($order: InputOrder!, $signature: String!) {
@@ -154,13 +97,29 @@ export default async function createMarketplaceOrder(
           }
         }
         fragment OrderInfo on Order {
+          ...PartialOrderFields
+          makerProfile {
+            name
+            addresses {
+              ronin
+              __typename
+            }
+            __typename
+          }
+          assets {
+            erc
+            address
+            id
+            quantity
+            orderId
+            __typename
+          }
+          __typename
+        }
+        fragment PartialOrderFields on Order {
           id
           maker
           kind
-          assets {
-            ...AssetInfo
-            __typename
-          }
           expiredAt
           paymentToken
           startedAt
@@ -177,19 +136,22 @@ export default async function createMarketplaceOrder(
           currentPrice
           suggestedPrice
           currentPriceUsd
-          __typename
-        }
-        fragment AssetInfo on Asset {
-          erc
-          address
-          id
-          quantity
-          orderId
+          assets {
+            erc
+            address
+            id
+            quantity
+            orderId
+            __typename
+          }
           __typename
         }
       `;
+
+  // This is the object that gets sent to the API, structured to match the working curl example
   const variables = {
     order: {
+      maker: address,
       nonce: 0,
       assets: [
         {
@@ -199,27 +161,30 @@ export default async function createMarketplaceOrder(
           quantity: "0",
         },
       ],
-      basePrice,
-      endedPrice,
-      startedAt,
-      endedAt,
-      expiredAt,
+      kind: "Sell",
+      expectedState: "",
+      basePrice: basePrice,
+      endedPrice: "0",
+      startedAt: startedAt,
+      endedAt: 0,
+      expiredAt: expiredAt,
     },
     signature,
   };
 
-  const graphqlUrl = skyMavisApiKey
-    ? "https://api-gateway.skymavis.com/graphql/axie-marketplace"
-    : "https://graphql-gateway.axieinfinity.com/graphql";
-
+  const { graphqlUrl, headers: apiHeaders } = getMarketplaceApi(skyMavisApiKey);
   const headers: Record<string, string> = {
+    ...apiHeaders,
     authorization: `Bearer ${accessToken}`,
-    ...(skyMavisApiKey && { "x-api-key": skyMavisApiKey }),
   };
 
   const result = await apiRequest<ICreateOrderResult>(
     graphqlUrl,
-    JSON.stringify({ query, variables }),
+    JSON.stringify({
+      operationName: "CreateOrder",
+      query,
+      variables,
+    }),
     headers,
   );
   return result;

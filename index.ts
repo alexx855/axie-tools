@@ -11,6 +11,7 @@ import {
   approveWETH,
   approveBatchTransfer,
 } from "./lib/marketplace/approve";
+import { createProvider } from "./lib/utils";
 import cancelMarketplaceOrder from "./lib/marketplace/cancel-order";
 import createMarketplaceOrder from "./lib/marketplace/create-order";
 import buyMarketplaceOrder from "./lib/marketplace/settle-order";
@@ -29,4 +30,5 @@ export {
   getAxieContract,
   getUSDCContract,
   getWETHContract,
+  createProvider,
 };

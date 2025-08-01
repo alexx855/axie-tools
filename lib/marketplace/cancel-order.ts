@@ -1,176 +1,144 @@
 import { AbiCoder, Contract, Interface, parseUnits, Signer } from "ethers";
-import { apiRequest } from "../utils";
-import {
-  APP_AXIE_ORDER_EXCHANGE,
-  MARKETPLACE_GATEWAY_V2,
-  MARKET_GATEWAY,
-  WRAPPED_ETHER,
-} from "@roninbuilders/contracts";
+import { apiRequest, getMarketplaceApi } from "../utils";
+import APP_AXIE_ORDER_EXCHANGE from "@roninbuilders/contracts/app_axie_order_exchange";
+import MARKET_GATEWAY from "@roninbuilders/contracts/market_gateway_proxy";
 
 export default async function cancelMarketplaceOrder(
   axieId: number,
   signer: Signer,
-  skyMavisApiKey?: string,
+  skyMavisApiKey: string,
+  order?: any, // Add optional order parameter
 ) {
-  // query the marketplace for the axie order
-  const query = `
-          query GetAxieDetail($axieId: ID!) {
-            axie(axieId: $axieId) {
-              id
-              order {
-                ... on Order {
-                  id
-                  maker
-                  kind
-                  assets {
-                    ... on Asset {
-                      erc
-                      address
-                      id
-                      quantity
-                      orderId
+  let orderToCancel = order;
+
+  if (!orderToCancel) {
+    const query = `
+            query GetAxieDetail($axieId: ID!) {
+              axie(axieId: $axieId) {
+                id
+                order {
+                  ... on Order {
+                    id
+                    maker
+                    kind
+                    assets {
+                      ... on Asset {
+                        erc
+                        address
+                        id
+                        quantity
+                        orderId
+                      }
                     }
+                    expiredAt
+                    paymentToken
+                    startedAt
+                    basePrice
+                    endedAt
+                    endedPrice
+                    expectedState
+                    nonce
+                    marketFeePercentage
+                    signature
+                    hash
+                    duration
+                    timeLeft
+                    currentPrice
+                    suggestedPrice
+                    currentPriceUsd
                   }
-                  expiredAt
-                  paymentToken
-                  startedAt
-                  basePrice
-                  endedAt
-                  endedPrice
-                  expectedState
-                  nonce
-                  marketFeePercentage
-                  signature
-                  hash
-                  duration
-                  timeLeft
-                  currentPrice
-                  suggestedPrice
-                  currentPriceUsd
                 }
               }
             }
-          }
-        `;
+          `;
 
-  interface IMarketplaceAxieOrderResult {
-    data?: {
-      axie: {
-        id: string;
-        order: {
+    interface IMarketplaceAxieOrderResult {
+      data?: {
+        axie: {
           id: string;
-          maker: string;
-          kind: number;
-          assets: Array<{
-            erc: number;
-            address: string;
-            id: string;
-            quantity: string;
-            orderId: string;
-          }>;
-          expiredAt: string;
-          paymentToken: string;
-          startedAt: string;
-          basePrice: string;
-          endedAt: string;
-          endedPrice: string;
-          expectedState: number;
-          nonce: string;
-          marketFeePercentage: number;
-          signature: string;
-          hash: string;
-          duration: number;
-          timeLeft: number;
-          currentPrice: string;
-          suggestedPrice: string;
-          currentPriceUsd: string;
-        } | null;
+          order: any | null;
+        };
+        errors?: Array<{
+          message: string;
+        }>;
       };
-      errors?: Array<{
-        message: string;
-      }>;
+    }
+
+    const variables = {
+      axieId,
     };
+
+    const { graphqlUrl, headers } = getMarketplaceApi(skyMavisApiKey);
+
+    console.time("GraphQL Fetch");
+    const result = await apiRequest<IMarketplaceAxieOrderResult>(
+      graphqlUrl,
+      JSON.stringify({ query, variables }),
+      headers,
+    );
+    console.timeEnd("GraphQL Fetch");
+    if (
+      result === null ||
+      result.data === undefined ||
+      result.data.axie.order == null
+    ) {
+      throw new Error(`Could not find an active order for Axie ID: ${axieId}`);
+    }
+
+    orderToCancel = result.data.axie.order;
   }
 
-  const variables = {
-    axieId,
-  };
-
-  const graphqlUrl = skyMavisApiKey
-    ? "https://api-gateway.skymavis.com/graphql/axie-marketplace"
-    : "https://graphql-gateway.axieinfinity.com/graphql";
-
-  const headers: Record<string, string> = {
-    ...(skyMavisApiKey && { "x-api-key": skyMavisApiKey }),
-  };
-
-  const result = await apiRequest<IMarketplaceAxieOrderResult>(
-    graphqlUrl,
-    JSON.stringify({ query, variables }),
-    headers,
-  );
-  if (
-    result === null ||
-    result.data === undefined ||
-    result.data.axie.order == null
-  ) {
-    console.log(`Axie ${axieId} is not for sale`);
-    return false;
-  }
-
-  const { order } = result.data.axie;
-
-  // marketplace order exchange contract
-  const marketAbi = new Interface(MARKET_GATEWAY.abi);
-  const contract = new Contract(
-    MARKETPLACE_GATEWAY_V2.address,
-    marketAbi,
-    signer,
-  );
-
-  // Assuming orderTypes and orderData are defined and orderData is an array
-  const orderTypes = [
-    "(address maker, uint8 kind, (uint8 erc,address addr,uint256 id,uint256 quantity)[] assets, uint256 expiredAt, address paymentToken, uint256 startedAt, uint256 basePrice, uint256 endedAt, uint256 endedPrice, uint256 expectedState, uint256 nonce, uint256 marketFeePercentage)",
-  ];
   const orderData = [
-    order.maker,
-    1, // market order kind
+    orderToCancel.maker,
+    orderToCancel.kind === "Sell" ? 1 : 0,
     [
       [
-        // MarketAsset.Asset[]
-        1, // MarketAsset.TokenStandard
-        order.assets[0].address, // tokenAddress
-        +order.assets[0].id, // axieId
-        +order.assets[0].quantity, // quantity
+        orderToCancel.assets[0].erc === "Erc721" ? 1 : 0,
+        orderToCancel.assets[0].address,
+        +orderToCancel.assets[0].id,
+        +orderToCancel.assets[0].quantity,
       ],
     ],
-    order.expiredAt,
-    WRAPPED_ETHER.address, // paymentToken WETH
-    order.startedAt,
-    order.basePrice,
-    order.endedAt,
-    order.endedPrice,
-    0, // expectedState
-    order.nonce,
-    425, // Market fee percentage, 4.25%
+    orderToCancel.expiredAt,
+    orderToCancel.paymentToken,
+    orderToCancel.startedAt,
+    orderToCancel.basePrice,
+    orderToCancel.endedAt,
+    orderToCancel.endedPrice,
+    orderToCancel.expectedState || 0,
+    orderToCancel.nonce,
+    orderToCancel.marketFeePercentage,
   ];
 
-  // Encode the orderData values
-  const encodedOrderData = AbiCoder.defaultAbiCoder().encode(orderTypes, [
-    orderData,
-  ]);
+  const encodedOrderData = AbiCoder.defaultAbiCoder().encode(
+    [
+      "(address maker, uint8 kind, (uint8 erc,address addr,uint256 id,uint256 quantity)[] assets, uint256 expiredAt, address paymentToken, uint256 startedAt, uint256 basePrice, uint256 endedAt, uint256 endedPrice, uint256 expectedState, uint256 nonce, uint256 marketFeePercentage)",
+    ],
+    [orderData],
+  );
 
-  // Encode the values again for the cancelOrder function
   const axieOrderExchangeInterface = new Interface(APP_AXIE_ORDER_EXCHANGE.abi);
-  const orderExchangeData = axieOrderExchangeInterface.encodeFunctionData(
+  const orderExchangePayload = axieOrderExchangeInterface.encodeFunctionData(
     "cancelOrder",
     [encodedOrderData],
   );
 
-  // Send the transaction
-  const tx = await contract.interactWith("ORDER_EXCHANGE", orderExchangeData, {
-    gasPrice: parseUnits("20", "gwei"),
+  const marketGatewayInterface = new Interface(MARKET_GATEWAY.proxy_abi);
+  const gatewayPayload = marketGatewayInterface.encodeFunctionData(
+    "interactWith",
+    ["ORDER_EXCHANGE", orderExchangePayload],
+  );
+
+  console.time("Transaction Send and Wait");
+  const tx = await signer.sendTransaction({
+    to: MARKET_GATEWAY.address,
+    data: gatewayPayload,
+    gasPrice: parseUnits("30", "gwei"),
+    nonce: await signer.getNonce(),
   });
+
+  console.log("Transaction sent, waiting for receipt...");
   const receipt = await tx.wait();
+  console.timeEnd("Transaction Send and Wait");
   return receipt;
 }

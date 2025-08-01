@@ -68,6 +68,8 @@ export const exchangeNonce = async (address: string) => {
   return data;
 };
 
+export default {};
+
 export const refreshToken = async (refreshToken: string) => {
   const data = await apiRequest<IAuthLoginResponse>(
     AUTH_TOKEN_REFRESH_URL,

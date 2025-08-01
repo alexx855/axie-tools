@@ -1,8 +1,29 @@
-import { confirm, number, password } from "@inquirer/prompts";
+import prompts from "prompts";
 import { JsonRpcProvider, formatEther } from "ethers";
-import { MARKETPLACE_GATEWAY_V2 } from "@roninbuilders/contracts";
+import MARKETPLACE_GATEWAY_V2 from "@roninbuilders/contracts/marketplace_gateway_v_2";
+import MARKETPLACE_GATEWAY_PROXY from "@roninbuilders/contracts/market_gateway_proxy";
 import { getAxieContract, getWETHContract } from "./contracts";
 import { getAxieIdsFromAccount } from "./axie";
+
+export function createProvider(skyMavisApiKey: string): JsonRpcProvider {
+  return new JsonRpcProvider(
+    `https://api-gateway.skymavis.com/rpc?apikey=${skyMavisApiKey}`,
+  );
+}
+
+export function getMarketplaceApi(skyMavisApiKey: string) {
+  const graphqlUrl =
+    "https://api-gateway.skymavis.com/graphql/axie-marketplace";
+
+  const headers: Record<string, string> = {
+    "x-api-key": skyMavisApiKey,
+  };
+
+  return {
+    graphqlUrl,
+    headers,
+  };
+}
 
 export async function getAccountInfo(
   address: string,
@@ -14,12 +35,12 @@ export async function getAccountInfo(
   const wethBalance = await wethContract.balanceOf(address);
   const allowance = await wethContract.allowance(
     address,
-    MARKETPLACE_GATEWAY_V2.address,
+    MARKETPLACE_GATEWAY_PROXY.address,
   );
   const axieContract = getAxieContract(provider);
   const isApprovedForAll = await axieContract.isApprovedForAll(
     address,
-    MARKETPLACE_GATEWAY_V2.address,
+    MARKETPLACE_GATEWAY_PROXY.address,
   );
 
   return {
@@ -41,21 +62,36 @@ export async function apiRequest<T>(
   const response = await fetch(url, {
     method,
     headers: {
-      "Content-Type": "application/json",
       ...headers,
+      "Content-Type": "application/json",
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
     },
     ...(method === "GET" ? {} : { body }),
   });
 
-  const res: T = await response.json();
-  return res;
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`HTTP ${response.status}: ${errorText}`);
+  }
+
+  const responseText = await response.text();
+
+  try {
+    const res: T = JSON.parse(responseText);
+    return res;
+  } catch (error) {
+    throw new Error(`Failed to parse JSON response: ${responseText}`);
+  }
 }
 
 export const askToContinue = async () => {
-  const continueUsing = await confirm({
+  const response = await prompts({
+    type: "confirm",
+    name: "continue",
     message: "🔄 Would you like to do something else?",
   });
-  if (!continueUsing) {
+  if (!response.continue) {
     console.log("👋 Goodbye!");
     process.exit(0);
   }
@@ -63,23 +99,31 @@ export const askToContinue = async () => {
 
 export async function ensureMarketplaceToken(): Promise<string> {
   if (!process.env.MARKETPLACE_ACCESS_TOKEN) {
-    const token = await password({
+    const response = await prompts({
+      type: "password",
+      name: "token",
       message: "🔑 Enter your Marketplace access token:",
-      validate: (value) => value !== undefined && value !== "",
+      validate: (value: string) => value !== undefined && value !== "",
     });
-    process.env.MARKETPLACE_ACCESS_TOKEN = token;
+    if (!response.token) {
+      console.log("❌ Access token is required");
+      process.exit(1);
+    }
+    process.env.MARKETPLACE_ACCESS_TOKEN = response.token;
   }
   return process.env.MARKETPLACE_ACCESS_TOKEN!;
 }
 
 export const getAxieId = async () => {
-  const axieId = await number({
+  const response = await prompts({
+    type: "number",
+    name: "axieId",
     message: "🆔 Enter Axie ID:",
-    validate: (value) => value !== undefined && !isNaN(value),
+    validate: (value: number) => value !== undefined && !isNaN(value),
   });
-  if (axieId === undefined) {
+  if (response.axieId === undefined) {
     console.log("❌ Invalid Axie ID!");
     return null;
   }
-  return axieId;
+  return response.axieId;
 };

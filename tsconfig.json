@@ -1,15 +1,24 @@
 {
   "compilerOptions": {
     "target": "es2020",
-    "module": "commonjs",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "declaration": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "allowImportingTsExtensions": false
   },
-  "include": ["lib/**/*.ts", "lib/**/*.json", "index.ts", "cli.ts"],
+  "include": [
+    "lib/**/*.ts",
+    "lib/**/*.json",
+    "index.ts",
+    "cli.ts",
+    "tests/settle-order.test.ts"
+  ],
   "exclude": ["node_modules", "scripts"]
 }

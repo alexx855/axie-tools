@@ -1,19 +1,19 @@
 {
   "name": "axie-tools-marketplace-examples",
   "version": "1.0.0",
-  "description": "Axie Infinity ether js marketplace examples",
+  "description": "Axie Infinity ronin ethers marketplace examples",
   "author": {
     "name": "Alex Pedersen",
     "email": "hello@alexpedersen.dev",
     "url": "https://alexpedersen.dev"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22"
   },
   "type": "module",
   "license": "ISC",
   "dependencies": {
-    "axie-tools": "^1.6.0",
+    "axie-tools": "^1.7.0",
     "dotenv": "^16.3.1",
     "ethers": "^6.13.4"
   }

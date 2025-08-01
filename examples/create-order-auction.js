@@ -1,19 +1,24 @@
-import { parseEther, Wallet, JsonRpcProvider } from "ethers";
+import { parseEther, Wallet } from "ethers";
 import {
   getAxieIdsFromAccount,
   approveMarketplaceContract,
   createMarketplaceOrder,
+  createProvider,
 } from "axie-tools";
 import "dotenv/config";
 
 async function auction() {
-  if (!process.env.PRIVATE_KEY || !process.env.MARKETPLACE_ACCESS_TOKEN) {
+  if (
+    !process.env.PRIVATE_KEY ||
+    !process.env.MARKETPLACE_ACCESS_TOKEN ||
+    !process.env.SKYMAVIS_API_KEY
+  ) {
     throw new Error(
-      "Please set PRIVATE_KEY and MARKETPLACE_ACCESS_TOKEN in a .env file",
+      "Please set PRIVATE_KEY, MARKETPLACE_ACCESS_TOKEN, and SKYMAVIS_API_KEY in a .env file",
     );
   }
 
-  const provider = new JsonRpcProvider("https://api.roninchain.com/rpc");
+  const provider = createProvider(process.env.SKYMAVIS_API_KEY);
   const wallet = new Wallet(process.env.PRIVATE_KEY, provider);
   const address = await wallet.getAddress();
 
@@ -64,6 +69,7 @@ async function auction() {
     orderData,
     process.env.MARKETPLACE_ACCESS_TOKEN,
     wallet,
+    process.env.SKYMAVIS_API_KEY,
   );
 
   if (result === null || result.errors || !result.data) {

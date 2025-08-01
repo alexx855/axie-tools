@@ -1,14 +1,21 @@
-import { utils, JsonRpcProvider, Wallet, formatEther } from "ethers";
-import { getAxieIdsFromAccount, batchTransferAxies } from "axie-tools";
+import { utils, Wallet, formatEther } from "ethers";
+import {
+  getAxieIdsFromAccount,
+  batchTransferAxies,
+  createProvider,
+} from "axie-tools";
 import "dotenv/config";
 
 async function batchTransfer() {
   const privateKey = process.env.PRIVATE_KEY;
-  if (!privateKey) {
-    throw new Error("Please set your PRIVATE_KEY in a .env file");
+  const skyMavisApiKey = process.env.SKYMAVIS_API_KEY;
+  if (!privateKey || !skyMavisApiKey) {
+    throw new Error(
+      "Please set your PRIVATE_KEY and SKYMAVIS_API_KEY in a .env file",
+    );
   }
 
-  const provider = new JsonRpcProvider("https://api.roninchain.com/rpc");
+  const provider = createProvider(skyMavisApiKey);
   const wallet = new Wallet(privateKey, provider);
   const fromAddress = await wallet.getAddress();
 

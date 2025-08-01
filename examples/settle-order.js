@@ -1,16 +1,20 @@
-import { buyMarketplaceOrder, approveWETH } from "axie-tools";
-import { formatEther, JsonRpcProvider } from "ethers";
+import { buyMarketplaceOrder, approveWETH, createProvider } from "axie-tools";
+import { formatEther, Wallet } from "ethers";
 import "dotenv/config";
 
 async function buyAxie() {
-  if (!process.env.PRIVATE_KEY || !process.env.MARKETPLACE_ACCESS_TOKEN) {
+  if (
+    !process.env.PRIVATE_KEY ||
+    !process.env.MARKETPLACE_ACCESS_TOKEN ||
+    !process.env.SKYMAVIS_API_KEY
+  ) {
     throw new Error(
-      "Please set your PRIVATE_KEY, MARKETPLACE_ACCESS_TOKEN, and SKYMAVIS_DAPP_KEY in a .env file",
+      "Please set your PRIVATE_KEY, MARKETPLACE_ACCESS_TOKEN, and SKYMAVIS_API_KEY in a .env file",
     );
   }
 
   // Initialize provider and wallet
-  const provider = new JsonRpcProvider("https://api.roninchain.com/rpc");
+  const provider = createProvider(process.env.SKYMAVIS_API_KEY);
   const wallet = new Wallet(process.env.PRIVATE_KEY, provider);
   const address = await wallet.getAddress();
 
@@ -28,15 +32,17 @@ async function buyAxie() {
   const axieId = parseInt(args[0]);
 
   try {
+    console.log(`🛒 Approving WETH for marketplace...`);
     await approveWETH(wallet);
 
+    console.log(`🛒 Buying Axie ${axieId}...`);
     const receipt = await buyMarketplaceOrder(
       axieId,
       wallet,
       process.env.MARKETPLACE_ACCESS_TOKEN,
+      process.env.SKYMAVIS_API_KEY,
     );
     if (receipt) {
-      console.log("✅ Transaction successful! Hash:", receipt.hash);
       console.log(
         "🔗 View transaction: https://app.roninchain.com/tx/" + receipt.hash,
       );

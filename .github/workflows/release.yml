@@ -1,0 +1,141 @@
+name: Release and Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: "Select the release type"
+        type: choice
+        required: true
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+          - prerelease
+          - custom
+      preid:
+        description: "Pre-release identifier (used when release_type = prerelease)"
+        type: string
+        required: false
+        default: rc
+      custom_version:
+        description: "Custom version (used when release_type = custom), e.g. 1.8.0"
+        type: string
+        required: false
+      npm_tag:
+        description: "npm dist-tag to publish under"
+        type: choice
+        required: true
+        default: latest
+        options:
+          - latest
+          - next
+          - beta
+          - alpha
+
+permissions:
+  contents: write   # push commits and tags, create releases
+  packages: write   # publish to npm registry
+  id-token: write   # enable npm provenance
+
+jobs:
+  release:
+    name: Release and publish to npm
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org/"
+          cache: pnpm
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate inputs
+        run: |
+          set -euo pipefail
+          TYPE="${{ github.event.inputs.release_type }}"
+          if [ "$TYPE" = "custom" ] && [ -z "${{ github.event.inputs.custom_version }}" ]; then
+            echo "custom_version is required when release_type=custom" >&2
+            exit 1
+          fi
+
+      - name: Bump version (no tag)
+        id: bump
+        run: |
+          set -euo pipefail
+          TYPE="${{ github.event.inputs.release_type }}"
+          PREID="${{ github.event.inputs.preid }}"
+          CUSTOM="${{ github.event.inputs.custom_version }}"
+
+          if [ "$TYPE" = "prerelease" ]; then
+            pnpm version prerelease --preid "$PREID" --no-git-tag-version
+          elif [ "$TYPE" = "custom" ]; then
+            pnpm version "$CUSTOM" --no-git-tag-version
+          else
+            pnpm version "$TYPE" --no-git-tag-version
+          fi
+
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "github-actions[bot]"
+
+      - name: Commit version bump
+        run: |
+          set -euo pipefail
+          git add -A
+          git commit -m "chore(release): v${NEW_VERSION}"
+          git push origin HEAD
+
+      - name: Build
+        run: pnpm build
+
+      - name: Publish to npm (with provenance)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "NPM_TOKEN secret is not set. Please add it in repository settings > Secrets and variables > Actions." >&2
+            exit 1
+          fi
+          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
+          # pnpm forwards flags to npm under the hood
+          pnpm publish --no-git-checks --access public --tag "${{ github.event.inputs.npm_tag }}" --provenance
+
+      - name: Create and push Git tag
+        run: |
+          set -euo pipefail
+          if git rev-parse "v${NEW_VERSION}" >/dev/null 2>&1; then
+            echo "Tag v${NEW_VERSION} already exists, skipping"
+          else
+            git tag "v${NEW_VERSION}"
+            git push origin "v${NEW_VERSION}"
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ env.NEW_VERSION }}"
+          name: "Release v${{ env.NEW_VERSION }}"
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -8,9 +8,6 @@ export async function transferAxie(
   axieId: string | number,
 ) {
   const addressFrom = await signer.getAddress();
-  console.log(
-    `Transferring axie ${axieId} from ${addressFrom} to ${addressTo}`,
-  );
 
   const writeAxieContract = getAxieContract(signer);
   const formattedAxieId =
@@ -22,7 +19,7 @@ export async function transferAxie(
     addressFrom,
     addressTo.replace("ronin:", "0x").toLowerCase(),
     formattedAxieId,
-    { gasPrice: parseUnits("25", "gwei") },
+    { gasPrice: parseUnits("26", "gwei") },
   );
 
   const receipt = await tx.wait();
@@ -43,9 +40,6 @@ export async function batchTransferAxies(
   await approveBatchTransfer(signer, batchTransferAddress);
 
   const addressFrom = await signer.getAddress();
-  console.log(
-    `Transferring ${axieIds.length} axies from ${addressFrom} to ${addressTo}`,
-  );
 
   // convert axieIds to an array of strings
   const axies: string[] = axieIds.map((axieId) => {
@@ -62,16 +56,11 @@ export async function batchTransferAxies(
     ? normalizedAddressTo
     : `0x${normalizedAddressTo}`;
 
-  console.log(
-    `Using addresses: from=${addressFrom}, to=${finalAddressTo}, contract=${axieContractAddress}`,
-  );
-  console.log(`Axie IDs: ${axies.join(", ")}`);
-
   // batch Transfer, call the function this way since it's overloaded
   const tx = await writeBatchTransferContract[
     "safeBatchTransfer(address,uint256[],address)"
   ](axieContractAddress, axies, finalAddressTo, {
-    gasPrice: parseUnits("25", "gwei"),
+    gasPrice: parseUnits("26", "gwei"),
   });
   // wait for tx to be mined and get receipt
   const receipt = await tx.wait();

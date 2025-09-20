@@ -1,8 +1,8 @@
 {
   "name": "axie-tools",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "type": "module",
-  "description": "TypeScript library and CLI tool for interacting with Axie Infinity marketplace and NFTs on Ronin network. Features marketplace operations (buy/sell/delist), batch transfers, and wallet information.",
+  "description": "TypeScript library and CLI tool for interacting with Axie Infinity marketplace and NFTs on Ronin network. Features marketplace operations for Axies and Materials (buy/sell/delist), batch transfers, and wallet information.",
   "scripts": {
     "build": "npm run build:lib && npm run build:cli",
     "build:lib": "esbuild index.ts --bundle --platform=node --format=esm --outfile=dist/index.js --external:ethers --external:@roninbuilders/contracts --external:prompts && tsc --emitDeclarationOnly",
@@ -12,9 +12,12 @@
     "dev": "bun cli.ts",
     "format": "npx @biomejs/biome format --write",
     "prepublishOnly": "npm run build",
-    "test:create-order": "AXIE_ID=<$AXIE_ID> PRICE=<$PRICE> bun test tests/create-order.test.ts --timeout 30000",
-    "test:cancel-order": "AXIE_ID=<$AXIE_ID> PRICE=<$PRICE> bun test tests/cancel-order.test.ts --timeout 30000",
-    "test:settle-order": "AXIE_ID=<$AXIE_ID> PRICE=<$PRICE> bun test tests/settle-order.test.ts --timeout 30000"
+    "test:create-order-axie": "AXIE_ID=<$AXIE_ID> PRICE=<$PRICE> bun test tests/create-order-axie.test.ts --timeout 30000",
+    "test:cancel-order-axie": "AXIE_ID=<$AXIE_ID> PRICE=<$PRICE> bun test tests/cancel-order-axie.test.ts --timeout 30000",
+    "test:settle-order-axie": "AXIE_ID=<$AXIE_ID> PRICE=<$PRICE> bun test tests/settle-order-axie.test.ts --timeout 30000",
+    "test:create-order-materials": "MATERIAL_ID=<$MATERIAL_ID> QUANTITY=<$QUANTITY> PRICE=<$PRICE> bun test tests/create-order-materials.test.ts --timeout 30000",
+    "test:cancel-order-materials": "MATERIAL_ID=<$MATERIAL_ID> QUANTITY=<$QUANTITY> PRICE=<$PRICE> bun test tests/cancel-order-materials.test.ts --timeout 30000",
+    "test:settle-order-materials": "MATERIAL_ID=<$MATERIAL_ID> QUANTITY=<$QUANTITY> PRICE=<$PRICE> bun test tests/settle-order-materials.test.ts --timeout 30000"
   },
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -32,6 +35,9 @@
     "axie",
     "infinity",
     "axie-infinity",
+    "materials",
+    "erc1155",
+    "erc721",
     "bot",
     "ronin",
     "marketplace",
@@ -61,10 +67,10 @@
     "esbuild": "^0.20.0"
   },
   "dependencies": {
-    "prompts": "^2.4.2",
     "@roninbuilders/contracts": "^0.6.8",
-    "dotenv": "^16.3.1",
+    "dotenv": "^17.2.1",
     "ethers": "^6.13.4",
+    "prompts": "^2.4.2",
     "typescript": "^5.1.6"
   }
 }

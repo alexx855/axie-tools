@@ -8,6 +8,20 @@ import {
 } from "../lib/utils";
 import createMarketplaceOrder from "../lib/marketplace/create-order";
 import { approveMarketplaceContract } from "../lib/marketplace/approve";
+import { getAxieFloorPrice } from "..";
+
+interface AxieQueryResponse {
+  data?: {
+    axie?: {
+      order?: {
+        id: string;
+      } | null;
+    } | null;
+  };
+  errors?: Array<{
+    message: string;
+  }>;
+}
 
 test("creates a new order", async () => {
   const axieId = process.env.AXIE_ID;
@@ -35,7 +49,7 @@ test("creates a new order", async () => {
     throw new Error("SKYMAVIS_API_KEY is required");
   }
   const { graphqlUrl, headers } = getMarketplaceApi(skyMavisApiKey);
-  const graphqlResult = await apiRequest(
+  const graphqlResult = await apiRequest<AxieQueryResponse>(
     graphqlUrl,
     JSON.stringify({ query, variables }),
     headers,
@@ -43,12 +57,19 @@ test("creates a new order", async () => {
 
   if (graphqlResult?.data?.axie?.order) {
     console.log(`Order for Axie ID ${axieId} already exists. Skipping test.`);
-    test.skip("Order already exists");
     return;
   }
 
   if (!price) {
-    price = "0.1";
+    console.log("🔍 Getting floor price from marketplace...");
+    const floorPrice = await getAxieFloorPrice(skyMavisApiKey);
+    if (!floorPrice) {
+      throw new Error(
+        "❌ Could not determine floor price and no price provided",
+      );
+    }
+    price = floorPrice;
+    console.log(`💰 Using floor price: ${price} WETH`);
   }
 
   const privateKey = process.env.PRIVATE_KEY;
@@ -78,7 +99,7 @@ test("creates a new order", async () => {
     address,
     axieId,
     basePrice: priceInWei,
-    endedPrice: priceInWei,
+    endedPrice: "0", // For fixed price orders, endedPrice should be 0
     startedAt: now,
     endedAt: 0, // For fixed price, endedAt is 0
     expiredAt: now + 86400 * 30, // Expires in 30 days

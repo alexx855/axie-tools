@@ -1,7 +1,9 @@
-import { AbiCoder, Contract, Interface, parseUnits, Signer } from "ethers";
+import { AbiCoder, Interface, Signer, parseUnits } from "ethers";
 import { apiRequest, getMarketplaceApi } from "../utils";
+import { getMarketplaceContract } from "../contracts";
+
+// We need to access the APP_AXIE_ORDER_EXCHANGE ABI directly since it's not wrapped in contracts.ts yet
 import APP_AXIE_ORDER_EXCHANGE from "@roninbuilders/contracts/app_axie_order_exchange";
-import MARKET_GATEWAY from "@roninbuilders/contracts/market_gateway_proxy";
 
 export default async function cancelMarketplaceOrder(
   axieId: number,
@@ -70,13 +72,12 @@ export default async function cancelMarketplaceOrder(
 
     const { graphqlUrl, headers } = getMarketplaceApi(skyMavisApiKey);
 
-    console.time("GraphQL Fetch");
     const result = await apiRequest<IMarketplaceAxieOrderResult>(
       graphqlUrl,
       JSON.stringify({ query, variables }),
       headers,
     );
-    console.timeEnd("GraphQL Fetch");
+
     if (
       result === null ||
       result.data === undefined ||
@@ -123,21 +124,17 @@ export default async function cancelMarketplaceOrder(
     [encodedOrderData],
   );
 
-  const marketGatewayInterface = new Interface(MARKET_GATEWAY.proxy_abi);
-  const gatewayPayload = marketGatewayInterface.encodeFunctionData(
-    "interactWith",
-    ["ORDER_EXCHANGE", orderExchangePayload],
-  );
+  const marketGatewayContract = getMarketplaceContract(signer);
 
   console.time("Transaction Send and Wait");
-  const tx = await signer.sendTransaction({
-    to: MARKET_GATEWAY.address,
-    data: gatewayPayload,
-    gasPrice: parseUnits("30", "gwei"),
-    nonce: await signer.getNonce(),
-  });
+  const tx = await marketGatewayContract.interactWith(
+    "ORDER_EXCHANGE",
+    orderExchangePayload,
+    {
+      gasPrice: parseUnits("26", "gwei"),
+    },
+  );
 
-  console.log("Transaction sent, waiting for receipt...");
   const receipt = await tx.wait();
   console.timeEnd("Transaction Send and Wait");
   return receipt;

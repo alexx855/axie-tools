@@ -1,9 +1,13 @@
 import prompts from "prompts";
 import { JsonRpcProvider, formatEther } from "ethers";
-import MARKETPLACE_GATEWAY_V2 from "@roninbuilders/contracts/marketplace_gateway_v_2";
-import MARKETPLACE_GATEWAY_PROXY from "@roninbuilders/contracts/market_gateway_proxy";
-import { getAxieContract, getWETHContract } from "./contracts";
+import {
+  getAxieContract,
+  getWETHContract,
+  getMarketplaceContract,
+  getMaterialContract,
+} from "./contracts";
 import { getAxieIdsFromAccount } from "./axie";
+import { getUserMaterials } from "./material";
 
 export function createProvider(skyMavisApiKey: string): JsonRpcProvider {
   return new JsonRpcProvider(
@@ -28,20 +32,29 @@ export function getMarketplaceApi(skyMavisApiKey: string) {
 export async function getAccountInfo(
   address: string,
   provider: JsonRpcProvider,
+  skyMavisApiKey: string,
 ) {
   const axieIds = await getAxieIdsFromAccount(address, provider);
   const wethContract = getWETHContract(provider);
+  const marketplaceContract = getMarketplaceContract(provider);
+  const marketplaceAddress = await marketplaceContract.getAddress();
+
   const balance = await provider.getBalance(address);
   const wethBalance = await wethContract.balanceOf(address);
-  const allowance = await wethContract.allowance(
-    address,
-    MARKETPLACE_GATEWAY_PROXY.address,
-  );
+  const allowance = await wethContract.allowance(address, marketplaceAddress);
   const axieContract = getAxieContract(provider);
   const isApprovedForAll = await axieContract.isApprovedForAll(
     address,
-    MARKETPLACE_GATEWAY_PROXY.address,
+    marketplaceAddress,
   );
+  const materialContract = getMaterialContract(provider);
+  const isMaterialApprovedForAll = await materialContract.isApprovedForAll(
+    address,
+    marketplaceAddress,
+  );
+
+  // Fetch materials information
+  const materials = await getUserMaterials(address, skyMavisApiKey);
 
   return {
     address,
@@ -49,7 +62,9 @@ export async function getAccountInfo(
     wethBalance: formatEther(wethBalance),
     allowance,
     isApprovedForAll,
+    isMaterialApprovedForAll,
     axieIds,
+    materials,
   };
 }
 
@@ -59,23 +74,43 @@ export async function apiRequest<T>(
   headers: Record<string, string> = {},
   method: "GET" | "POST" = "POST",
 ) {
+  // Log GraphQL query and variables if it's a POST request with body
+  if (method === "POST" && body) {
+    try {
+      const parsedBody = JSON.parse(body as string);
+      if (parsedBody.query) {
+        // console.log("🔍 GraphQL Query:", parsedBody.query.replace(/\s+/g, ' ').trim());
+        if (parsedBody.variables) {
+          // console.log(
+          //   "📋 Variables:",
+          //   JSON.stringify(parsedBody.variables, null, 2),
+          // );
+        }
+      }
+    } catch (e) {
+      console.error("Failed to parse GraphQL request body:", e);
+      // If body is not parseable JSON, just continue
+    }
+  }
+
+  // console.time("🚀 Fetch");
   const response = await fetch(url, {
     method,
     headers: {
       ...headers,
       "Content-Type": "application/json",
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
     },
     ...(method === "GET" ? {} : { body }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.timeEnd("🚀 Fetch");
     throw new Error(`HTTP ${response.status}: ${errorText}`);
   }
 
   const responseText = await response.text();
+  console.timeEnd("🚀 Fetch");
 
   try {
     const res: T = JSON.parse(responseText);
@@ -106,7 +141,6 @@ export async function ensureMarketplaceToken(): Promise<string> {
       validate: (value: string) => value !== undefined && value !== "",
     });
     if (!response.token) {
-      console.log("❌ Access token is required");
       process.exit(1);
     }
     process.env.MARKETPLACE_ACCESS_TOKEN = response.token;
@@ -122,7 +156,6 @@ export const getAxieId = async () => {
     validate: (value: number) => value !== undefined && !isNaN(value),
   });
   if (response.axieId === undefined) {
-    console.log("❌ Invalid Axie ID!");
     return null;
   }
   return response.axieId;

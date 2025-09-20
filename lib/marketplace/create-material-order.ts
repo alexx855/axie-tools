@@ -1,75 +1,59 @@
 import { Wallet } from "ethers";
-import { apiRequest, getMarketplaceApi } from "../utils";
+import { apiRequest, getMarketplaceApi, createProvider } from "../utils";
 import {
-  getMarketplaceContract,
-  getAxieContract,
+  checkMaterialOwnership,
+  type ICreateMaterialOrderData,
+} from "../material";
+import {
+  getMaterialContract,
   getWETHContract,
+  getMarketplaceContract,
 } from "../contracts";
+import type { ICreateOrderResult } from "../marketplace";
 
-// Types for Axie (ERC721) orders
-const axieOrderTypes = {
+// Types for Material (ERC1155) orders - EXACT structure from working raw data
+const materialOrderTypes = {
   Asset: [
     { name: "erc", type: "uint8" },
     { name: "addr", type: "address" },
     { name: "id", type: "uint256" },
     { name: "quantity", type: "uint256" },
   ],
-  Order: [
+  ERC1155Order: [
     { name: "maker", type: "address" },
     { name: "kind", type: "uint8" },
-    { name: "assets", type: "Asset[]" },
+    { name: "asset", type: "Asset" },
     { name: "expiredAt", type: "uint256" },
     { name: "paymentToken", type: "address" },
     { name: "startedAt", type: "uint256" },
-    { name: "basePrice", type: "uint256" },
+    { name: "unitPrice", type: "uint256" },
     { name: "endedAt", type: "uint256" },
-    { name: "endedPrice", type: "uint256" },
+    { name: "endedUnitPrice", type: "uint256" },
     { name: "expectedState", type: "uint256" },
     { name: "nonce", type: "uint256" },
-    { name: "marketFeePercentage", type: "uint256" },
   ],
 };
 
-export interface ICreateOrderData {
-  address: string;
-  axieId: string;
-  basePrice: string;
-  endedPrice: string;
-  startedAt: number;
-  endedAt: number;
-  expiredAt: number;
-}
-
-export interface ICreateOrderResult {
-  data?: {
-    createOrder: {
-      hash: string;
-      currentPriceUsd: string;
-    };
-  };
-  errors?: Array<{
-    message: string;
-  }>;
-}
-
-export default async function createMarketplaceOrder(
-  orderData: ICreateOrderData,
+export async function createMaterialMarketplaceOrder(
+  orderData: ICreateMaterialOrderData,
   accessToken: string,
   signer: Wallet,
   skyMavisApiKey: string,
-) {
+  options?: { nonce?: string },
+): Promise<ICreateOrderResult> {
   const {
     address,
-    axieId,
-    basePrice,
-    endedPrice,
+    materialId,
+    quantity: inputQuantity,
+    unitPrice,
+    endedUnitPrice,
     startedAt,
     endedAt,
     expiredAt,
   } = orderData;
 
   // Get contract addresses
-  const AXIE_CONTRACT_ADDRESS = await getAxieContract().getAddress();
+  const MATERIAL_CONTRACT_ADDRESS = await getMaterialContract().getAddress();
   const WETH_CONTRACT_ADDRESS = await getWETHContract().getAddress();
   const MARKETPLACE_CONTRACT_ADDRESS =
     await getMarketplaceContract().getAddress();
@@ -78,39 +62,76 @@ export default async function createMarketplaceOrder(
   const domain = {
     name: "MarketGateway",
     version: "1",
-    chainId: "2020", // ✅ CRITICAL FIX: Use string "2020" not number 2020
-    verifyingContract: MARKETPLACE_CONTRACT_ADDRESS, // 0x3b3adf1422f84254b7fbb0e7ca62bd0865133fe3
+    chainId: "2020",
+    verifyingContract: MARKETPLACE_CONTRACT_ADDRESS,
   };
 
-  const marketGatewayContract = getMarketplaceContract(signer);
-  const nonce = await marketGatewayContract.makerNonce(address);
+  console.log(`🔍 Checking ownership for address: ${address}`);
 
-  // This is the object that gets signed
+  const ownership = await checkMaterialOwnership(
+    materialId,
+    address,
+    skyMavisApiKey,
+    accessToken,
+  );
+
+  if (!ownership) {
+    throw new Error(
+      `❌ Unable to verify ownership of material ${materialId}. Please check if you own this material.`,
+    );
+  }
+
+  const ownedQuantity = ownership.total;
+
+  if (ownedQuantity === 0) {
+    throw new Error(
+      `❌ You don't own any of material ${materialId}. You need to own at least 1 to create an order.`,
+    );
+  }
+
+  // If quantity not provided, use all owned
+  let quantity: string;
+  if (!inputQuantity) {
+    quantity = ownedQuantity.toString();
+  } else {
+    quantity = inputQuantity;
+    if (parseInt(quantity) > ownedQuantity) {
+      throw new Error(
+        `❌ Insufficient quantity!
+  • Requested: ${quantity}
+  • Owned: ${ownedQuantity}
+  • Cannot list more materials than you own.`,
+      );
+    }
+  }
+
+  // Material order to sign (exact structure from working example)
   const orderToSign = {
-    maker: address,
+    maker: address.replace("ronin:", "0x"), // Use Ethereum address format for signing
     kind: "1", // Sell order
-    assets: [
-      {
-        erc: "1", // ERC721
-        addr: AXIE_CONTRACT_ADDRESS,
-        id: axieId,
-        quantity: "0", // ERC721 quantity is 0 for API compatibility
-      },
-    ],
+    asset: {
+      // Note: 'asset' (singular) like working example
+      erc: "2", // ERC1155
+      addr: MATERIAL_CONTRACT_ADDRESS,
+      id: materialId,
+      quantity: quantity,
+    },
     expiredAt: expiredAt.toString(),
     paymentToken: WETH_CONTRACT_ADDRESS,
     startedAt: startedAt.toString(),
-    basePrice: basePrice,
-    endedAt: endedAt.toString(),
-    endedPrice: endedPrice,
+    unitPrice: unitPrice, // Use unitPrice like working example
+    endedAt: "0", // Fixed price listing
+    endedUnitPrice: "0",
     expectedState: "0",
-    nonce: nonce.toString(),
-    marketFeePercentage: "425", // Standard 4.25% fee
+    nonce: options?.nonce || "0",
   };
 
-  const signature = await signer.signTypedData(
+  const provider = createProvider(skyMavisApiKey);
+  const signerWithProvider = signer.connect(provider);
+
+  const signature = await signerWithProvider.signTypedData(
     domain,
-    axieOrderTypes,
+    materialOrderTypes,
     orderToSign,
   );
 
@@ -173,25 +194,25 @@ export default async function createMarketplaceOrder(
         }
       `;
 
-  // This is the object that gets sent to the API
+  // API payload for material order (uses 'assets' array format for API)
   const variables = {
     order: {
-      maker: address,
-      nonce: Number(nonce),
+      maker: address.replace("ronin:", "0x"), // Use 0x format for API
+      nonce: 0, // Hardcoded as per working example
       assets: [
         {
-          id: axieId,
-          address: AXIE_CONTRACT_ADDRESS,
-          erc: "Erc721",
-          quantity: "0", // API expects "0" for ERC721
+          id: materialId,
+          address: MATERIAL_CONTRACT_ADDRESS,
+          erc: "Erc1155",
+          quantity: quantity,
         },
       ],
       kind: "Sell",
       expectedState: "",
-      basePrice: basePrice,
-      endedPrice: endedPrice,
+      basePrice: unitPrice, // API uses basePrice
+      endedPrice: "0", // Fixed price listing
       startedAt: startedAt,
-      endedAt: endedAt,
+      endedAt: 0, // Fixed price listing
       expiredAt: expiredAt,
     },
     signature,
@@ -212,5 +233,6 @@ export default async function createMarketplaceOrder(
     }),
     headers,
   );
+
   return result;
 }

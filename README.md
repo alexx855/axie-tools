@@ -1,6 +1,6 @@
 # Axie tools
 
-TypeScript library and CLI tool for interacting with the Axie Infinity marketplace and NFTs on the Ronin network. Features marketplace operations (create marketplace orders – fixed-price & auction, cancel orders, settle orders), batch transfers, approval utilities, and wallet information.
+TypeScript library and CLI tool for interacting with the Axie Infinity marketplace and NFTs on the Ronin network. Features marketplace operations for both Axies (ERC721) and Materials (ERC1155) including create marketplace orders (fixed-price & auction), cancel orders, settle orders, batch transfers, approval utilities, and wallet information.
 
 You only need Node.js. Install it from [Node.js official download page](https://nodejs.org/en/download/prebuilt-binaries/)
 
@@ -9,7 +9,7 @@ You only need Node.js. Install it from [Node.js official download page](https://
 ### Option 1: Install globally
 
 ```shell
-npm install -g axie-tools
+npm install -g axie-tools@latest
 axie-tools
 ```
 
@@ -63,11 +63,15 @@ This will present an interactive menu with the following options:
 - Get account info
 - Refresh access token
 - Approve WETH
-- Approve marketplace
+- Approve marketplace (for Axies)
+- Approve material marketplace (for Materials)
 - Settle order (buy axie)
+- Settle material order (buy materials)
 - Cancel order (delist axie)
+- Cancel material order (delist materials)
 - Cancel all orders (delist all axies)
 - Create order (list axie for sale)
+- Create material order (list materials for sale)
 - Create auction (list axie for auction)
 - Create orders for all axies (list all)
 - Transfer axie
@@ -90,10 +94,13 @@ The CLI will guide you through the inputs for each action.
 ### Considerations
 
 - You need RON tokens to pay for the gas fees of the onchain transactions.
-- All scripts use WETH for the marketplace transactions, you need to have WETH in your wallet to settle orders (buy axies).
-- Creating orders (listing) is offchain, you will need to approve the marketplace contract to use your axies first, you can do this with the `approveMarketplaceContract` function or manually in the marketplace website the first time you create an order.
-- Settling orders (buying) is onchain, you need to have approve WETH allowance, you can do this with the `approveWETH` function or manually in the marketplace website the first time you settle an order.
+- All scripts use WETH for the marketplace transactions, you need to have WETH in your wallet to settle orders (buy axies/materials).
+- Creating orders (listing) is offchain, you will need to approve the marketplace contract first:
+  - For Axies: use `approveMarketplaceContract` function or approve manually in the marketplace website
+  - For Materials: use `approveMaterialMarketplace` function or approve manually in the marketplace website
+- Settling orders (buying) is onchain, you need to have approved WETH allowance, you can do this with the `approveWETH` function or manually in the marketplace website the first time you settle an order.
 - Cancelling orders is onchain.
+- Material quantity is optional - if not specified, all available materials will be listed.
 - If you get a "Signer is not maker" error, make sure the access token is correct.
 
 ### Contributing
@@ -102,15 +109,39 @@ Feel free to open an issue or a pull request if you have any error, questions or
 
 ### Testing
 
-Run tests with bun. Set the `AXIE_ID` and `PRICE` environment variables and specify a test file. Default timeout is 5000ms; override with `--timeout`. Examples:
+Run tests with bun. Set the required environment variables and specify a test file. Default timeout is 5000ms; override with `--timeout`. Examples:
+
+#### Axie Tests
 
 ```shell
 # Create order (list axie for sale)
-AXIE_ID=111111 PRICE=0.1 bun test tests/create-order.test.ts --timeout 30000
+AXIE_ID=111111 PRICE=0.1 bun test tests/create-order-axie.test.ts --timeout 30000
+
+# Create orders for all owned axies (list all at floor price if no PRICE specified)
+PRICE=0.001 bun test tests/create-orders-all-axies.test.ts --timeout 60000
+
+# Create orders for all owned axies at floor price (automatic price detection)
+bun test tests/create-orders-all-axies.test.ts --timeout 60000
 
 # Cancel order (delist axie)
-AXIE_ID=111111 PRICE=0.1 bun test tests/cancel-order.test.ts --timeout 30000
+AXIE_ID=111111 PRICE=0.1 bun test tests/cancel-order-axie.test.ts --timeout 30000
 
 # Settle order (buy axie)
-AXIE_ID=111111 PRICE=0.1 bun test tests/settle-order.test.ts --timeout 30000
+AXIE_ID=111111 PRICE=0.1 bun test tests/settle-order-axie.test.ts --timeout 30000
+```
+
+#### Material Tests
+
+```shell
+# Create material order (list materials for sale) - with specific quantity
+MATERIAL_ID=1099511627776 QUANTITY=5 PRICE=0.001 bun test tests/create-order-materials.test.ts --timeout 30000
+
+# Create material order (list ALL available materials at floor price) - quantity optional
+MATERIAL_ID=1099511627776  bun test tests/create-order-materials.test.ts --timeout 30000
+
+# Cancel material order (delist materials)
+MATERIAL_ID=1099511627776  bun test tests/cancel-order-materials.test.ts --timeout 30000
+
+# Settle material order (buy materials)
+MATERIAL_ID=1099511627776 QUANTITY=5 PRICE=0.001 bun test tests/settle-order-materials.test.ts --timeout 30000
 ```

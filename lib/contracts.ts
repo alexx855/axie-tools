@@ -1,8 +1,9 @@
 import { Interface, Contract, Signer, Provider } from "ethers";
 import AXIE_PROXY from "@roninbuilders/contracts/axie_proxy";
 import ERC721_BATCH_TRANSFER from "@roninbuilders/contracts/erc_721_batch_transfer";
-// import MARKETPLACE_GATEWAY_V2 from '@roninbuilders/contracts/marketplace_gateway_v_2'
 import MARKETPLACE_GATEWAY_PROXY from "@roninbuilders/contracts/market_gateway_proxy";
+import MATERIAL_ERC_1155_PROXY from "@roninbuilders/contracts/material_erc_1155_proxy";
+import ERC_1155_EXCHANGE from "@roninbuilders/contracts/erc_1155_exchange_21a3764f";
 import USD_COIN from "@roninbuilders/contracts/usd_coin";
 import WRAPPED_ETHER from "@roninbuilders/contracts/wrapped_ether";
 
@@ -12,7 +13,6 @@ export function getAxieContract(signerOrProvider?: Signer | Provider) {
   return new Contract(address, abi, signerOrProvider);
 }
 
-// TODO, use this instead of importing the contract directly everywhere else
 export function getMarketplaceContract(signerOrProvider?: Signer | Provider) {
   const address = MARKETPLACE_GATEWAY_PROXY.address;
   const abi = new Interface(MARKETPLACE_GATEWAY_PROXY.proxy_abi);
@@ -33,6 +33,20 @@ export function getWETHContract(signerOrProvider?: Signer | Provider) {
 
 export function getUSDCContract(signerOrProvider?: Signer | Provider) {
   const address = USD_COIN.address;
-  const abi = new Interface(USD_COIN.abi);
+  const abi = new Interface(USD_COIN.proxy_abi);
+  return new Contract(address, abi, signerOrProvider);
+}
+
+export function getMaterialContract(signerOrProvider?: Signer | Provider) {
+  const address = MATERIAL_ERC_1155_PROXY.address;
+  const abi = new Interface(MATERIAL_ERC_1155_PROXY.proxy_abi);
+  return new Contract(address, abi, signerOrProvider);
+}
+
+export function getERC1155ExchangeContract(
+  signerOrProvider?: Signer | Provider,
+) {
+  const address = ERC_1155_EXCHANGE.address;
+  const abi = new Interface(ERC_1155_EXCHANGE.abi);
   return new Contract(address, abi, signerOrProvider);
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect, jest, beforeAll } from "bun:test";
+import { describe, it, expect, beforeAll } from "bun:test";
 import { Wallet } from "ethers";
 import cancelMarketplaceOrder from "../lib/marketplace/cancel-order";
 import { createProvider, getMarketplaceApi } from "../lib/utils";
@@ -84,8 +84,6 @@ describe("cancelMarketplaceOrder", () => {
     const fetchHeaders = {
       ...headers,
       "Content-Type": "application/json",
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
     };
 
     const result = await fetch(graphqlUrl, {
@@ -110,9 +108,13 @@ describe("cancelMarketplaceOrder", () => {
       orderToCancel,
     );
     expect(receipt).toBeDefined();
-    console.log(
-      `Order cancelled successfully for Axie ID: ${axieIdToCancel}`,
-      receipt,
-    );
+    console.log(`Order cancelled successfully for Axie ID: ${axieIdToCancel}`);
+    if (receipt.transactionHash) {
+      console.log(`🔗 Transaction Hash: ${receipt.transactionHash}`);
+      console.log(
+        `🔗 Transaction: https://app.roninchain.com/tx/${receipt.transactionHash}`,
+      );
+    }
+    console.log("📊 Full receipt:", receipt);
   });
 });

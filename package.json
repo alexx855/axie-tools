@@ -11,7 +11,7 @@
     "start": "node dist/cli.js",
     "dev": "bun cli.ts",
     "format": "npx @biomejs/biome format --write",
-  "format:check": "npx @biomejs/biome format --write=false .",
+    "format:check": "npx @biomejs/biome format --check .",
     "prepublishOnly": "npm run build",
     "test:create-order-axie": "AXIE_ID=<$AXIE_ID> PRICE=<$PRICE> bun test tests/create-order-axie.test.ts --timeout 30000",
     "test:cancel-order-axie": "AXIE_ID=<$AXIE_ID> PRICE=<$PRICE> bun test tests/cancel-order-axie.test.ts --timeout 30000",

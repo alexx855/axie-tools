@@ -1,4 +1,4 @@
-name: Release and Publish
+name: Automated contract update and publish
 
 on:
   workflow_dispatch:
@@ -121,6 +121,21 @@ jobs:
           echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
           # pnpm forwards flags to npm under the hood
           pnpm publish --no-git-checks --access public --tag "${{ github.event.inputs.npm_tag }}" --provenance
+
+      - name: Setup Node.js for GitHub Packages
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@roninbuilders"
+
+      - name: Publish to GitHub Packages
+        if: always() # attempt GH Packages publish even if npm publish succeeded; will be skipped only if job fails before
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          pnpm publish --registry https://npm.pkg.github.com --no-git-checks
 
       - name: Create and push Git tag
         run: |

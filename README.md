@@ -1,5 +1,7 @@
 # Axie tools
 
+![Buying Axie](./examples/buying-axie.png)
+
 [![npm version](https://img.shields.io/npm/v/axie-tools.svg?label=npm%20version)](https://www.npmjs.com/package/axie-tools)
 [![npm downloads](https://img.shields.io/npm/dm/axie-tools.svg?color=blue)](https://www.npmjs.com/package/axie-tools)
 [![CI](https://github.com/alexx855/axie-tools/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/alexx855/axie-tools/actions/workflows/ci.yml)
@@ -7,140 +9,111 @@
 [![License: ISC](https://img.shields.io/badge/License-ISC-yellow.svg)](https://opensource.org/licenses/ISC)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
-🚀 **Automate Your Axie Infinity Trading**  
-Professional TypeScript CLI and library for seamless marketplace operations on the Ronin blockchain.
+Trade Axie Infinity NFTs and materials directly from your terminal. This TypeScript library and CLI makes it easy to buy, sell, and manage your Ronin blockchain assets.
 
-TypeScript library and CLI tool for interacting with the Axie Infinity marketplace and NFTs on the Ronin network. Features marketplace operations for both Axies (ERC721) and Materials (ERC1155) including create marketplace orders (fixed-price & auction), cancel orders, settle orders, batch transfers, approval utilities, and wallet information.
+Got tired of clicking through the marketplace interface? This tool handles everything from listing your Axies and materials to buying new ones. Works with both individual items and bulk operations, so you can manage your entire collection without opening a browser.
 
-## ✨ Features
+## What it does
 
-- 🛒 **Marketplace Operations**: Buy, sell, and auction Axies and Materials on the Ronin marketplace
-- 🔄 **Order Management**: Create, cancel, and settle orders with full lifecycle support
-- 📦 **Batch Transfers**: Efficiently transfer multiple Axies at once
-- ✅ **Approval Utilities**: Streamlined token and marketplace approvals
-- 👛 **Wallet Integration**: Complete wallet information and management tools
-- 🖥️ **Interactive CLI**: User-friendly command-line interface with guided prompts
-- 📚 **TypeScript Library**: Full TypeScript support for programmatic integration
-- 🔒 **Type Safety**: Strongly typed operations for reliable blockchain interactions
+Buy, sell, and auction your Axies and materials right from the command line. The tool handles both individual transactions and bulk operations when you want to list your entire collection.
 
-## 📋 Prerequisites
+Transfer multiple Axies at once instead of doing them one by one. Set up marketplace approvals without dealing with the web interface. Get your wallet info and manage everything through simple commands.
 
-Before using Axie Tools, ensure you have the following:
+The interactive CLI walks you through each step, or you can use the TypeScript library if you want to build your own scripts. Everything is strongly typed so you won't run into weird blockchain errors.
 
-- **Node.js** >= 22.0.0 - [Download from official site](https://nodejs.org/en/download/prebuilt-binaries/)
-- **Ronin Wallet** - For private key access
-- **Axie Infinity Marketplace Account** - For marketplace access token
-- **SkyMavis API Key** - Required for API access ([Get from Ronin Developer Console](https://developers.roninchain.com/console/applications))
+## What you need
 
-## Quick Start (CLI via npx)
+You'll need a few things set up first:
 
-Run the interactive CLI
+- Node.js 22 or newer ([download here](https://nodejs.org/en/download/prebuilt-binaries/))
+- Your Ronin wallet private key
+- An Axie Infinity marketplace account for the access token
+- A SkyMavis API key from the [Ronin Developer Console](https://developers.roninchain.com/console/applications)
+
+## Try it right now
+
+Just run this and you'll get an interactive menu:
 
 ```shell
 npx axie-tools
 ```
 
-This will present an interactive menu with the following options:
+The menu gives you options like:
 
-- Get account info
-- Refresh access token
-- Approve WETH
-- Approve marketplace (for Axies)
-- Approve material marketplace (for Materials)
-- Settle order (buy axie)
-- Settle material order (buy materials)
-- Cancel order (delist axie)
-- Cancel material order (delist materials)
-- Cancel all orders (delist all axies)
-- Create order (list axie for sale)
-- Create material order (list materials for sale)
-- Create auction (list axie for auction)
-- Create orders for all axies (list all)
-- Transfer axie
-- Transfer all axies
+- Check your account info
+- Refresh your access token
+- Approve WETH spending
+- Approve the marketplace contracts
+- Buy an Axie or materials
+- List your stuff for sale
+- Cancel your listings
+- Set up auctions
+- Transfer Axies around
 
-The CLI will guide you through the inputs for each action.
+Pick what you want to do and the tool walks you through it.
 
 > [!TIP]
 > You can create an `.env` file from `.env.example` to avoid entering values every time you use the CLI.
 
-![CLIScreenshot](./examples/CLIScreenshot.png)
+## Using it in your own code
 
-## Use as a library (Node.js)
-
-Install as a dependency in your project:
+Install it in your project:
 
 ```shell
 npm install axie-tools ethers dotenv
 ```
 
-Create a .env file with the following values:
+Make a .env file with your credentials:
 
 ```shell
-# Get from Ronin wallet: Manage wallet > Show private key
-PRIVATE_KEY="<your private key, copy from ronin wallet: manage wallet > show private key>"
-# Get from app.axie: Browser > Developer Tools > Application > Local storage > https://app.axieinfinity.com > accessToken
-MARKETPLACE_ACCESS_TOKEN="<your marketplace access token, log in to the marketplace and copy from the developer console>"
-# Required - SkyMavis API key (AxieInfinity API has Cloudflare protection and won't work without complex workarounds)
-SKYMAVIS_API_KEY="<your skymavis project key, get from https://developers.roninchain.com/console/applications/"
+# Your wallet private key (Ronin wallet > Manage wallet > Show private key)
+PRIVATE_KEY="your_private_key_here"
+# Marketplace token (log into app.axieinfinity.com, open dev tools > Application > Local storage > accessToken)
+MARKETPLACE_ACCESS_TOKEN="your_access_token_here"
+# API key from https://developers.roninchain.com/console/applications/
+SKYMAVIS_API_KEY="your_api_key_here"
 ```
 
-Example usage:
+Check out the examples folder for working code:
 
-- Settle order (buy axie): [complete example code](https://github.com/alexx855/axie-tools/tree/main/examples/settle-order.js)
-- Create order (list axie for sale): [complete example code](https://github.com/alexx855/axie-tools/tree/main/examples/create-order.js)
-- Create auction (list axie for auction): [complete example code](https://github.com/alexx855/axie-tools/tree/main/examples/create-order-auction.js)
-- Cancel order (delist axie): [complete example code](https://github.com/alexx855/axie-tools/tree/main/examples/cancel-order.js)
-- Create material order (list materials for sale): [complete example code](https://github.com/alexx855/axie-tools/tree/main/examples/material-order.js)
-- Transfer all axies: [complete example code](https://github.com/alexx855/axie-tools/tree/main/examples/transfer-all.js)
+- [Buy an Axie](https://github.com/alexx855/axie-tools/tree/main/examples/settle-order.js)
+- [List an Axie for sale](https://github.com/alexx855/axie-tools/tree/main/examples/create-order.js)
+- [Create an auction](https://github.com/alexx855/axie-tools/tree/main/examples/create-order-auction.js)
+- [Cancel a listing](https://github.com/alexx855/axie-tools/tree/main/examples/cancel-order.js)
+- [List materials for sale](https://github.com/alexx855/axie-tools/tree/main/examples/material-order.js)
+- [Transfer all your Axies](https://github.com/alexx855/axie-tools/tree/main/examples/transfer-all.js)
 
-## 📖 API Reference
+### Functions you can use
 
-### Marketplace Operations
+**Axie stuff:**
+- `createMarketplaceOrder()` - List an Axie for sale
+- `cancelMarketplaceOrder()` - Remove your listing
+- `buyMarketplaceOrder()` - Buy someone else's Axie
 
-#### Axie Operations (ERC721)
+**Materials:**
+- `createMaterialMarketplaceOrder()` - List materials for sale
+- `cancelMaterialOrder()` - Remove material listing
+- `buyMaterialOrder()` - Buy materials
 
-- `createMarketplaceOrder(orderData, accessToken, signer, skyMavisApiKey)` - Create a fixed-price listing for an Axie
-- `cancelMarketplaceOrder(axieId, signer, skyMavisApiKey, order?)` - Cancel an active Axie listing
-- `buyMarketplaceOrder(axieId, signer, accessToken, skyMavisApiKey, existingOrder?)` - Purchase an Axie from the marketplace
+**Moving things around:**
+- `transferAxie()` - Send one Axie to another wallet
+- `batchTransferAxies()` - Send multiple Axies at once
 
-#### Material Operations (ERC1155)
+**Approvals (you need these before trading):**
+- `approveWETH()` - Let the marketplace spend your WETH
+- `approveMarketplaceContract()` - Let the marketplace handle your Axies
+- `approveMaterialMarketplace()` - Let the marketplace handle your materials
 
-- `createMaterialMarketplaceOrder(orderData, accessToken, signer, skyMavisApiKey, options?)` - Create a fixed-price listing for Materials
-- `cancelMaterialOrder(materialId, signer, skyMavisApiKey)` - Cancel an active Material listing
-- `buyMaterialOrder(materialId, quantity, signer, accessToken, skyMavisApiKey)` - Purchase Materials from the marketplace
+**Useful helpers:**
+- `getAxieIdsFromAccount()` - See what Axies someone owns
+- `getAccountInfo()` - Get wallet info
+- `getAxieFloorPrice()` - Current floor price for Axies
+- `getMaterialFloorPrice()` - Current floor price for specific materials
+- `createProvider()` - Connect to the Ronin network
 
-### Transfer Operations
+## Building from source
 
-- `transferAxie(signer, addressTo, axieId)` - Transfer a single Axie to another address
-- `batchTransferAxies(signer, addressTo, axieIds)` - Transfer multiple Axies efficiently
-
-### Approval Utilities
-
-- `approveWETH(signer)` - Approve WETH spending for marketplace operations
-- `approveMarketplaceContract(signer)` - Approve the Axie marketplace contract
-- `approveMaterialMarketplace(signer)` - Approve the Material marketplace contract
-- `approveBatchTransfer(signer, batchTransferAddress)` - Approve batch transfer operations
-
-### Utility Functions
-
-- `getAxieIdsFromAccount(address, provider)` - Get all Axie IDs owned by an account
-- `getAccountInfo(address, provider, skyMavisApiKey)` - Retrieve wallet and account information
-- `refreshToken()` - Refresh marketplace access token
-- `getAxieFloorPrice(skyMavisApiKey)` - Get current Axie floor price
-- `getMaterialFloorPrice(materialId, skyMavisApiKey, requestedQuantity?)` - Get current Material floor price
-- `validateMaterialToken(tokenId, skyMavisApiKey)` - Validate Material token existence
-
-### Contract Helpers
-
-- `getAxieContract()` - Get Axie contract instance
-- `getWETHContract()` - Get WETH contract instance
-- `getUSDCContract()` - Get USDC contract instance
-- `createProvider()` - Create ethers provider for Ronin network
-
-## Clone and build from source
-
-For local development or testing the latest changes:
+Want to hack on it or try the latest changes?
 
 ```shell
 git clone https://github.com/alexx855/axie-tools.git
@@ -149,7 +122,7 @@ npm install
 npm run build
 ```
 
-Or, using pnpm with the included lockfile for a reproducible install:
+If you use pnpm:
 
 ```shell
 git clone https://github.com/alexx855/axie-tools.git
@@ -160,9 +133,9 @@ pnpm build
 
 ## Examples
 
-You can run ready-made scripts from the `examples/` folder.
+There are working scripts in the `examples/` folder you can try out.
 
-Setup once:
+Set them up once:
 
 ```shell
 cd examples
@@ -170,29 +143,29 @@ cp .env.example .env
 npm install
 ```
 
-Run specific examples:
+Then run whatever you want:
 
 ```shell
-# Buy an Axie (settle an order)
+# Buy an Axie
 node settle-order.js $AXIE_ID
 
-# List an Axie for a fixed price (in ETH)
+# List an Axie for 0.1 ETH
 node create-order.js $AXIE_ID 0.1
 
-# List an Axie for auction: startPrice endPrice durationHours
+# Create an auction (start at 0.1, end at 0.5, run for 24 hours)
 node create-order-auction.js $AXIE_ID 0.1 0.5 24
 
-# Cancel a listing for an Axie
+# Cancel your listing
 node cancel-order.js $AXIE_ID
 
-# List Materials (ERC-1155). Optional: pass quantity to limit amount listed
+# List some materials
 node material-order.js $MATERIAL_ID [quantity] [priceInETH]
 
-# Transfer all Axies to another wallet
+# Send all your Axies to another wallet
 node transfer-all.js $RECIPIENT_ADDRESS
 ```
 
-Links to example source files:
+All the source code is here:
 
 - [settle-order.js](./examples/settle-order.js)
 - [create-order.js](./examples/create-order.js)
@@ -201,139 +174,81 @@ Links to example source files:
 - [material-order.js](./examples/material-order.js)
 - [transfer-all.js](./examples/transfer-all.js)
 
-### How to get marketplace access token
+### Getting your access token
 
-> [!NOTE]
-> Get your access token by logging into [https://app.axieinfinity.com/](https://app.axieinfinity.com/) and accessing Developer Tools > Application > Local storage > [https://app.axieinfinity.com](https://app.axieinfinity.com) > accessToken
+Log into [app.axieinfinity.com](https://app.axieinfinity.com/), open your browser's dev tools, and go to Application > Local storage > https://app.axieinfinity.com. Copy the `accessToken` value.
 
-![ConsoleScreenshot](./examples/accessTokenConsoleScreenshot.png)
+[Here's a screenshot](https://github.com/alexx855/axie-tools/blob/main/examples/accessTokenConsoleScreenshot.png) if you need to see exactly where it is.
 
-## 🐛 Troubleshooting
+## When things go wrong
 
-### Common Issues and Solutions
+**"Signer is not maker" error**
 
-#### "Signer is not maker" Error
+Your access token expired or is wrong. Log out of the marketplace, log back in, and grab a fresh token from dev tools.
 
-**Cause**: Incorrect or expired marketplace access token.
+**"Insufficient WETH allowance" error**
 
-**Solution**:
+You need to approve WETH spending first. Either run `approveWETH()` or use the CLI approve option.
 
-- Refresh your access token by logging out and back into the Axie marketplace
-- Verify the token in Developer Tools > Application > Local Storage
-- Update your `.env` file with the new token
+**"Marketplace contract not approved" error**
 
-#### "Insufficient WETH allowance" Error
+Same deal but for the marketplace contracts. Run `approveMarketplaceContract()` for Axies or `approveMaterialMarketplace()` for materials.
 
-**Cause**: Haven't approved WETH spending for marketplace transactions.
+**Transactions failing**
 
-**Solution**:
+Probably not enough RON for gas. Make sure you have some RON in your wallet.
 
-- Run `approveWETH()` function or use the CLI "Approve WETH" option
-- Alternatively, approve manually in the Axie marketplace website
+**API connection problems**
 
-#### "Marketplace contract not approved" Error
+Your SkyMavis API key is missing or wrong. Get a new one from the [developer console](https://developers.roninchain.com/console/applications) and update your .env file.
 
-**Cause**: Missing approval for marketplace contract.
+**"Material token not found" error**
 
-**Solution**:
+The material ID you're using doesn't exist. Double check the ID or use `validateMaterialToken()` to verify it's real.
 
-- For Axies: Run `approveMarketplaceContract()` or approve in marketplace
-- For Materials: Run `approveMaterialMarketplace()` or approve in marketplace
+### Getting help
 
-#### Transaction Failures
+Look at the examples folder for working code, check the function list above, or open an issue on GitHub if something's broken.
 
-**Cause**: Insufficient RON for gas fees.
+### Things to know
 
-**Solution**: Ensure you have enough RON in your wallet to cover transaction fees.
+All buying and selling uses WETH, not ETH. Make sure you have enough WETH in your wallet before trying to buy stuff.
 
-#### API Connection Issues
+Listing items for sale happens off-chain but you need to approve the contracts first. Actually buying and canceling listings are real blockchain transactions.
 
-**Cause**: Missing or invalid SkyMavis API key.
+## Contributing
 
-**Solution**:
+Want to help out? Check the [Contributing Guidelines](CONTRIBUTING.md) for the full details, but basically:
 
-- Get a valid API key from [Ronin Developer Console](https://developers.roninchain.com/console/applications)
-- Update your `.env` file with the correct key
-
-#### "Material token not found" Error
-
-**Cause**: Invalid material ID or token doesn't exist.
-
-**Solution**:
-
-- Verify the material ID is correct
-- Use `validateMaterialToken(materialId)` to check token validity
-- Check available materials in your inventory
-
-### Getting Help
-
-- Check the [examples folder](./examples/) for working code samples
-- Review the [API Reference](#-api-reference) for correct function usage
-- Open an issue on GitHub for bugs or feature requests
-
-### Considerations
-
-- All marketplace transactions use WETH - ensure sufficient WETH balance for purchases
-- Creating orders (listing) is offchain but requires contract approval first
-- Settling orders (buying) and cancelling orders are onchain operations
-- Material quantity defaults to all available if not specified
-
-## 🤝 Contributing
-
-Please see our [Contributing Guidelines](CONTRIBUTING.md) for details on:
-
-- How to report bugs and request features
-- Development setup and workflow
-- Code style and testing requirements
-- Pull request process
-
-### Development Setup
-
-1. Fork the repository
-2. Clone your fork: `git clone https://github.com/your-username/axie-tools.git`
-3. Install dependencies: `pnpm install`
-4. Create a feature branch: `git checkout -b feature/your-feature-name`
-5. Make your changes and add tests
+1. Fork the repo
+2. Clone it: `git clone https://github.com/your-username/axie-tools.git`
+3. Install stuff: `pnpm install`
+4. Make a branch: `git checkout -b feature/your-thing`
+5. Do your changes and add tests
 6. Run tests: `npm test`
-7. Submit a pull request
+7. Send a pull request
 
-Feel free to open an issue or a pull request if you have any error, questions or suggestions.
+Open an issue if you find bugs or have ideas.
 
 ### Testing
 
-Run tests with bun. Set the required environment variables and specify a test file. Default timeout is 5000ms; override with `--timeout`. Examples:
+Tests run with bun. You need the environment variables set up and might need to bump the timeout since blockchain stuff is slow.
 
-#### Axie Tests
+Some examples:
 
 ```shell
-# Create order (list axie for sale)
+# Test listing an Axie
 AXIE_ID=111111 PRICE=0.1 bun test tests/create-order-axie.test.ts --timeout 30000
 
-# Create orders for all owned axies (list all at floor price if no PRICE specified)
-PRICE=0.001 bun test tests/create-orders-all-axies.test.ts --timeout 60000
-
-# Create orders for all owned axies at floor price (automatic price detection)
+# Test listing all your Axies at floor price
 bun test tests/create-orders-all-axies.test.ts --timeout 60000
 
-# Cancel order (delist axie)
-AXIE_ID=111111 PRICE=0.1 bun test tests/cancel-order-axie.test.ts --timeout 30000
-
-# Settle order (buy axie)
+# Test buying an Axie
 AXIE_ID=111111 PRICE=0.1 bun test tests/settle-order-axie.test.ts --timeout 30000
-```
 
-#### Material Tests
-
-```shell
-# Create material order (list materials for sale) - with specific quantity
+# Test listing materials
 MATERIAL_ID=1099511627776 QUANTITY=5 PRICE=0.001 bun test tests/create-order-materials.test.ts --timeout 30000
 
-# Create material order (list ALL available materials at floor price) - quantity optional
-MATERIAL_ID=1099511627776  bun test tests/create-order-materials.test.ts --timeout 30000
-
-# Cancel material order (delist materials)
-MATERIAL_ID=1099511627776  bun test tests/cancel-order-materials.test.ts --timeout 30000
-
-# Settle material order (buy materials)
+# Test buying materials
 MATERIAL_ID=1099511627776 QUANTITY=5 PRICE=0.001 bun test tests/settle-order-materials.test.ts --timeout 30000
 ```

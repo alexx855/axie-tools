@@ -1,4 +1,4 @@
-name: Automated contract update and publish
+name: Release axie-tools
 
 on:
   workflow_dispatch:
@@ -157,7 +157,6 @@ jobs:
         with:
           node-version: 22
           registry-url: "https://npm.pkg.github.com"
-          scope: "@roninbuilders"
 
       - name: Publish to GitHub Packages
         env:

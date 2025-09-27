@@ -1,6 +1,6 @@
 {
   "name": "axie-tools",
-  "version": "1.7.4",
+  "version": "1.7.5",
   "type": "module",
   "description": "TypeScript library and CLI tool for interacting with Axie Infinity marketplace and NFTs on Ronin network. Features marketplace operations for Axies and Materials (buy/sell/delist), batch transfers, and wallet information.",
   "scripts": {

@@ -73,7 +73,6 @@ jobs:
             echo "custom_version is required when release_type=custom" >&2
             exit 1
           fi
-
       - name: Bump version (no tag)
         id: bump
         run: |
@@ -106,10 +105,28 @@ jobs:
           git commit -m "chore(release): v${NEW_VERSION}"
           git push origin HEAD
 
+      - name: Create and push Git tag (fail if exists)
+        run: |
+          set -euo pipefail
+          TAG="v${NEW_VERSION}"
+          # Fail fast if tag already exists locally
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "Tag $TAG already exists locally. Aborting release." >&2
+            exit 1
+          fi
+          # Fail fast if tag exists on remote
+            if git ls-remote --exit-code origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists on origin. Aborting release." >&2
+            exit 1
+          fi
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
       - name: Build
         run: pnpm build
 
       - name: Publish to npm (with provenance)
+        id: npm_publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
@@ -122,6 +139,19 @@ jobs:
           # pnpm forwards flags to npm under the hood
           pnpm publish --no-git-checks --access public --tag "${{ github.event.inputs.npm_tag }}" --provenance
 
+      - name: Rollback git changes on npm publish failure
+        if: failure() && steps.npm_publish.conclusion == 'failure'
+        run: |
+          set -euo pipefail
+          echo "npm publish failed, rolling back git changes..."
+          # Delete the tag from remote and local
+          git push --delete origin "v${NEW_VERSION}" || true
+          git tag -d "v${NEW_VERSION}" || true
+          # Reset the version commit
+          git reset --hard HEAD~1
+          git push --force-with-lease origin HEAD
+          echo "Rollback completed"
+
       - name: Setup Node.js for GitHub Packages
         uses: actions/setup-node@v4
         with:
@@ -130,22 +160,12 @@ jobs:
           scope: "@roninbuilders"
 
       - name: Publish to GitHub Packages
-        if: always() # attempt GH Packages publish even if npm publish succeeded; will be skipped only if job fails before
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           pnpm publish --registry https://npm.pkg.github.com --no-git-checks
 
-      - name: Create and push Git tag
-        run: |
-          set -euo pipefail
-          if git rev-parse "v${NEW_VERSION}" >/dev/null 2>&1; then
-            echo "Tag v${NEW_VERSION} already exists, skipping"
-          else
-            git tag "v${NEW_VERSION}"
-            git push origin "v${NEW_VERSION}"
-          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

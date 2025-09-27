@@ -24,7 +24,6 @@
 [![CI](https://github.com/alexx855/axie-tools/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/alexx855/axie-tools/actions/workflows/ci.yml)
 ![node version](https://img.shields.io/badge/node-%3E%3D22-brightgreen)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
 Trade Axie Infinity NFTs and materials directly from your terminal, scripts or bots. This TypeScript library and CLI makes it easy to buy, sell, and manage your Axies and Materials on Ronin Network. Works with both individual items and bulk operations, so you can manage your entire collection without opening a browser.
 

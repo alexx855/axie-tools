@@ -152,20 +152,6 @@ jobs:
           git push --force-with-lease origin HEAD
           echo "Rollback completed"
 
-      - name: Setup Node.js for GitHub Packages
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          registry-url: "https://npm.pkg.github.com"
-
-      - name: Publish to GitHub Packages
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          pnpm publish --registry https://npm.pkg.github.com --no-git-checks
-
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:

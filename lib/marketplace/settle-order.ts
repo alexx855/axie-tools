@@ -41,7 +41,7 @@ export default async function buyMarketplaceOrder(
     // Use shared utility to encode order data
     const encodedOrderData = encodeAxieOrderData(order);
 
-    const referralAddr = "0x0000000000000000000000000000000000000000";
+    const referralAddr = "0xa7d8ca624656922c633732fa2f327f504678d132";
 
     const settleInfo = {
       orderData: encodedOrderData,

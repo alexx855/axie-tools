@@ -147,7 +147,7 @@ export async function buyMaterialOrder(
     );
 
     // Create settle info
-    const referralAddr = "0x0000000000000000000000000000000000000000";
+    const referralAddr = "0xa7d8ca624656922c633732fa2f327f504678d132";
     const parsedExpectedState =
       order.expectedState && order.expectedState !== ""
         ? BigInt(order.expectedState)

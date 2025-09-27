@@ -6,20 +6,18 @@
 [![npm downloads](https://img.shields.io/npm/dm/axie-tools.svg?color=blue)](https://www.npmjs.com/package/axie-tools)
 [![CI](https://github.com/alexx855/axie-tools/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/alexx855/axie-tools/actions/workflows/ci.yml)
 ![node version](https://img.shields.io/badge/node-%3E%3D22-brightgreen)
-[![License: ISC](https://img.shields.io/badge/License-ISC-yellow.svg)](https://opensource.org/licenses/ISC)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
-Trade Axie Infinity NFTs and materials directly from your terminal. This TypeScript library and CLI makes it easy to buy, sell, and manage your Ronin blockchain assets.
-
-Got tired of clicking through the marketplace interface? This tool handles everything from listing your Axies and materials to buying new ones. Works with both individual items and bulk operations, so you can manage your entire collection without opening a browser.
+Trade Axie Infinity NFTs and materials directly from your terminal, scripts or bots. This TypeScript library and CLI makes it easy to buy, sell, and manage your Axies and Materials on Ronin Network. Works with both individual items and bulk operations, so you can manage your entire collection without opening a browser.
 
 ## What it does
 
-Buy, sell, and auction your Axies and materials right from the command line. The tool handles both individual transactions and bulk operations when you want to list your entire collection.
+Buy, sell, and auction your Axies and materials. The tool handles both individual transactions and bulk operations when you want to list your entire collection.
 
 Transfer multiple Axies at once instead of doing them one by one. Set up marketplace approvals without dealing with the web interface. Get your wallet info and manage everything through simple commands.
 
-The interactive CLI walks you through each step, or you can use the TypeScript library if you want to build your own scripts. Everything is strongly typed so you won't run into weird blockchain errors.
+The interactive CLI walks you through each step, or you can use the TypeScript library if you want to build your own scripts.
 
 ## What you need
 
@@ -27,7 +25,7 @@ You'll need a few things set up first:
 
 - Node.js 22 or newer ([download here](https://nodejs.org/en/download/prebuilt-binaries/))
 - Your Ronin wallet private key
-- An Axie Infinity marketplace account for the access token
+- An Axie Infinity marketplace account for the access token ([see how to get it](#getting-your-access-token))
 - A SkyMavis API key from the [Ronin Developer Console](https://developers.roninchain.com/console/applications)
 
 ## Try it right now
@@ -252,3 +250,8 @@ MATERIAL_ID=1099511627776 QUANTITY=5 PRICE=0.001 bun test tests/create-order-mat
 # Test buying materials
 MATERIAL_ID=1099511627776 QUANTITY=5 PRICE=0.001 bun test tests/settle-order-materials.test.ts --timeout 30000
 ```
+
+## License
+
+Released under the MIT License. See the `LICENSE` file for details.
+

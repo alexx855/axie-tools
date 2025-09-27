@@ -1,6 +1,23 @@
 # Axie tools
 
-![Buying Axie](./examples/buying-axie.png)
+```typescript
+  import { buyMarketplaceOrder, approveWETH } from "axie-tools";
+  console.log(`🛒 Approving WETH for marketplace...`);
+  await approveWETH(wallet);
+
+  console.log(`🛒 Buying Axie ${axieId}...`);
+  const receipt = await buyMarketplaceOrder(
+    axieId,
+    wallet,
+    process.env.MARKETPLACE_ACCESS_TOKEN,
+    process.env.SKYMAVIS_API_KEY,
+  );
+  if (receipt) {
+    console.log(
+      "🔗 View transaction: https://app.roninchain.com/tx/" + receipt.hash,
+    );
+  }
+```
 
 [![npm version](https://img.shields.io/npm/v/axie-tools.svg?label=npm%20version)](https://www.npmjs.com/package/axie-tools)
 [![npm downloads](https://img.shields.io/npm/dm/axie-tools.svg?color=blue)](https://www.npmjs.com/package/axie-tools)

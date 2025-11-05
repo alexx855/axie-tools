@@ -44,6 +44,14 @@ export function getMaterialContract(signerOrProvider?: Signer | Provider) {
   return new Contract(address, abi, signerOrProvider);
 }
 
+export function getConsumableContract(signerOrProvider?: Signer | Provider) {
+  // Consumables use the same ERC1155 contract as materials
+  // They are differentiated by tokenType in the GraphQL API
+  const address = MATERIAL_ERC_1155_PROXY.address;
+  const abi = new Interface(MATERIAL_ERC_1155_PROXY.proxy_abi);
+  return new Contract(address, abi, signerOrProvider);
+}
+
 export function getERC1155ExchangeContract(
   signerOrProvider?: Signer | Provider,
 ) {

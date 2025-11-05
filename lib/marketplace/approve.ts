@@ -3,6 +3,7 @@ import {
   getAxieContract,
   getWETHContract,
   getMaterialContract,
+  getConsumableContract,
   getMarketplaceContract,
 } from "../contracts";
 
@@ -89,6 +90,30 @@ export async function approveMaterialMarketplace(signer: Signer) {
 
   if (!isApproved) {
     const tx = await materialContract.setApprovalForAll(
+      marketplaceAddress,
+      true,
+      {
+        gasPrice: parseUnits("26", "gwei"),
+      },
+    );
+    const receipt = await tx.wait();
+  }
+  return isApproved;
+}
+
+export async function approveConsumableMarketplace(signer: Signer) {
+  const consumableContract = getConsumableContract(signer);
+  const marketplaceContract = getMarketplaceContract();
+  const address = await signer.getAddress();
+  const marketplaceAddress = await marketplaceContract.getAddress();
+
+  let isApproved = await consumableContract.isApprovedForAll(
+    address,
+    marketplaceAddress,
+  );
+
+  if (!isApproved) {
+    const tx = await consumableContract.setApprovalForAll(
       marketplaceAddress,
       true,
       {

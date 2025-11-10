@@ -23,6 +23,66 @@ interface IAuthLoginResponse {
   enabled_mfa: boolean;
 }
 
+export interface TokenExpirationInfo {
+  expiresAt: Date;
+  expiresIn: number;
+  isExpired: boolean;
+  humanReadable: string;
+}
+
+interface JWTPayload {
+  exp?: number;
+  [key: string]: unknown;
+}
+
+const decodeJWT = (token: string): JWTPayload => {
+  const parts = token.split(".");
+  if (parts.length !== 3) throw new Error("Invalid JWT format");
+
+  const payload = parts[1];
+  const decoded = Buffer.from(payload, "base64").toString("utf-8");
+  return JSON.parse(decoded);
+};
+
+export const isTokenExpired = (token: string): boolean => {
+  const payload = decodeJWT(token);
+  if (!payload.exp) throw new Error("Token missing exp claim");
+
+  return Date.now() >= payload.exp * 1000;
+};
+
+export const getTokenExpirationInfo = (token: string): TokenExpirationInfo => {
+  const payload = decodeJWT(token);
+  if (!payload.exp) throw new Error("Token missing exp claim");
+
+  const expiresAt = new Date(payload.exp * 1000);
+  const now = Date.now();
+  const expiresInMs = expiresAt.getTime() - now;
+  const expiresInSeconds = Math.floor(expiresInMs / 1000);
+  const isExpired = expiresInSeconds <= 0;
+
+  let humanReadable: string;
+  if (isExpired) {
+    const pastSeconds = Math.abs(expiresInSeconds);
+    const hours = Math.floor(pastSeconds / 3600);
+    const minutes = Math.floor((pastSeconds % 3600) / 60);
+    humanReadable =
+      hours > 0 ? `expired ${hours}h ${minutes}m ago` : `expired ${minutes}m ago`;
+  } else {
+    const hours = Math.floor(expiresInSeconds / 3600);
+    const minutes = Math.floor((expiresInSeconds % 3600) / 60);
+    humanReadable =
+      hours > 0 ? `expires in ${hours}h ${minutes}m` : `expires in ${minutes}m`;
+  }
+
+  return {
+    expiresAt,
+    expiresIn: expiresInSeconds,
+    isExpired,
+    humanReadable,
+  };
+};
+
 // Taken from https://github.com/SM-Trung-Le/temp-accessToken
 export const generateAccessTokenMessage = async (
   address: string,
@@ -49,7 +109,12 @@ export const exchangeToken = async (signature: string, message: string) => {
     throw new Error("No access token");
   }
 
-  return data;
+  const expirationInfo = getTokenExpirationInfo(data.accessToken);
+
+  return {
+    ...data,
+    expirationInfo,
+  };
 };
 
 export const exchangeNonce = async (address: string) => {
@@ -82,5 +147,12 @@ export const refreshToken = async (refreshToken: string) => {
       "Error refreshing token, API response: " + JSON.stringify(data),
     );
   }
-  return { newAccessToken, newRefreshToken };
+
+  const expirationInfo = getTokenExpirationInfo(newAccessToken);
+
+  return {
+    newAccessToken,
+    newRefreshToken,
+    expirationInfo,
+  };
 };

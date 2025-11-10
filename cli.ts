@@ -22,6 +22,7 @@ import {
   cancelMaterialOrder,
   createMarketplaceOrder,
   createMaterialMarketplaceOrder,
+  getTokenExpirationInfo,
 } from "./index";
 import "dotenv/config";
 
@@ -277,6 +278,17 @@ async function main() {
             "🔐 Marketplace approval for Materials:",
             info.isMaterialApprovedForAll ? "✅ Approved" : "❌ Not approved",
           );
+
+          const token = process.env.MARKETPLACE_ACCESS_TOKEN;
+          if (token) {
+            const expInfo = getTokenExpirationInfo(token);
+            console.log(
+              "🎫 Access token:",
+              expInfo.isExpired ? "❌" : "✅",
+              expInfo.humanReadable,
+            );
+          }
+
           console.log(`🐾 Number of Axies: ${info.axieIds.length}`);
           if (info.axieIds.length > 0) {
             console.log(`🆔 Axie IDs: ${info.axieIds.join(", ")}`);
@@ -310,8 +322,12 @@ async function main() {
           }
 
           const result = await refreshToken(refreshTokenValue);
-          console.log("New access token:", result.newAccessToken);
-          console.log("New refresh token:", result.newRefreshToken);
+          console.log("✅ Token refreshed!");
+          console.log(
+            "🎫 Access token:",
+            result.expirationInfo.isExpired ? "❌" : "✅",
+            result.expirationInfo.humanReadable,
+          );
 
           process.env.MARKETPLACE_ACCESS_TOKEN = result.newAccessToken;
           process.env.MARKETPLACE_REFRESH_TOKEN = result.newRefreshToken;

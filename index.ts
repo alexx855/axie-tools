@@ -1,5 +1,5 @@
 import { getAxieIdsFromAccount } from "./lib/axie";
-import { refreshToken } from "./lib/marketplace/access-token";
+import { refreshToken, getTokenExpirationInfo } from "./lib/marketplace/access-token";
 import {
   getAxieContract,
   getUSDCContract,
@@ -29,6 +29,7 @@ import { buyMaterialOrder } from "./lib/marketplace/settle-material-order";
 
 export {
   refreshToken,
+  getTokenExpirationInfo,
   getAxieIdsFromAccount,
   approveMarketplaceContract,
   approveWETH,

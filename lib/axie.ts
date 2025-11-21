@@ -1,5 +1,5 @@
 import { AbiCoder, JsonRpcProvider, isAddress } from "ethers";
-import { getAxieContract } from "./contracts";
+import { getAxieContract, getMulticall3Contract } from "./contracts";
 import { apiRequest, getMarketplaceApi } from "./utils";
 import type {
   IOrder,
@@ -78,20 +78,41 @@ export async function getAxieIdsFromAccount(
   address: string,
   provider: JsonRpcProvider,
 ) {
-  // get axie contract
   const axieContract = getAxieContract(provider);
+  const multicall3Contract = getMulticall3Contract(provider);
 
-  // get axies balance for the address
+  // Get axies balance for the address
   const axiesBalance = await axieContract.balanceOf(address);
 
-  // get axie ids
-  let axieIds: number[] = [];
-  for (let i = 0; i < axiesBalance; i++) {
-    try {
-      const axieId = await axieContract.tokenOfOwnerByIndex(address, i);
-      axieIds.push(Number(axieId));
-    } catch (error: unknown) {
-      // Skip failed queries
+  if (axiesBalance === 0n) {
+    return [];
+  }
+
+  const balanceNum = Number(axiesBalance);
+  const axieContractAddress = await axieContract.getAddress();
+
+  // Create array of calls for tokenOfOwnerByIndex
+  const calls = Array.from({ length: balanceNum }, (_, i) => ({
+    target: axieContractAddress,
+    callData: axieContract.interface.encodeFunctionData("tokenOfOwnerByIndex", [address, i]),
+  }));
+
+  // Execute multicall using tryAggregate (read-only version) via staticCall
+  const results = await multicall3Contract.tryAggregate.staticCall(false, calls);
+
+  // Decode results
+  const axieIds: number[] = [];
+  for (const result of results) {
+    if (result.success) {
+      try {
+        const decoded = axieContract.interface.decodeFunctionResult(
+          "tokenOfOwnerByIndex",
+          result.returnData,
+        );
+        axieIds.push(Number(decoded[0]));
+      } catch (error) {
+        // Skip failed decoding
+      }
     }
   }
 

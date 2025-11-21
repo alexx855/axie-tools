@@ -252,6 +252,7 @@ async function main() {
           },
           { title: "Transfer axie", value: "transfer" },
           { title: "Transfer all axies", value: "transfer-all" },
+          { title: "List all axies (comma-separated)", value: "list-all" },
         ],
       });
       const action = response.action;
@@ -872,6 +873,58 @@ async function main() {
               "🔗 View transaction: https://app.roninchain.com/tx/" +
                 receipt.hash,
             );
+          }
+          break;
+        }
+        case "list-all": {
+          const addressResponse = await prompts({
+            type: "text",
+            name: "queryAddress",
+            message: "Enter address to export axies from (leave empty for your own):",
+            validate: (value: string) => !value || value.startsWith("0x"),
+          });
+
+          const queryAddress = addressResponse.queryAddress || address;
+          console.log(`🔍 Fetching all axies for ${queryAddress}...`);
+          const axieIds = await getAxieIdsFromAccount(queryAddress, provider);
+
+          if (axieIds.length === 0) {
+            console.log("❌ No Axies found");
+            break;
+          }
+
+          const csvResponse = await prompts({
+            type: "select",
+            name: "format",
+            message: "How would you like to export?",
+            choices: [
+              { title: "Print to screen", value: "screen" },
+              { title: "Save as CSV file", value: "csv" },
+            ],
+          });
+
+          const commaSeparated = axieIds.join(",");
+
+          if (csvResponse.format === "screen") {
+            console.log(`\n📋 Axies (${axieIds.length} total):`);
+            console.log(commaSeparated);
+          } else if (csvResponse.format === "csv") {
+            const filenameResponse = await prompts({
+              type: "text",
+              name: "filename",
+              message: "Enter filename (without .csv extension):",
+              validate: (value: string) => value.length > 0,
+            });
+
+            if (!filenameResponse.filename) {
+              console.log("❌ Filename is required");
+              break;
+            }
+
+            const fs = await import("fs/promises");
+            const filename = `${filenameResponse.filename}.csv`;
+            await fs.writeFile(filename, commaSeparated);
+            console.log(`✅ Saved ${axieIds.length} axie IDs to ${filename}`);
           }
           break;
         }

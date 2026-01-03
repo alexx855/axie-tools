@@ -124,6 +124,28 @@ Check out the examples folder for working code:
 - `getAxieFloorPrice()` - Current floor price for Axies
 - `getMaterialFloorPrice()` - Current floor price for specific materials
 - `createProvider()` - Connect to the Ronin network
+- `getGasPrice()` - Get current gas price from provider
+
+### Gas Price Options
+
+All transaction functions support an optional `GasPriceOptions` parameter to customize gas pricing:
+
+```typescript
+import { parseUnits } from "ethers";
+import { transferAxie, buyMarketplaceOrder } from "axie-tools";
+
+// Use dynamic gas price from the network (default behavior)
+await transferAxie(signer, recipientAddress, axieId);
+
+// Or pass a custom gas price
+const customGasPrice = parseUnits("30", "gwei");
+await transferAxie(signer, recipientAddress, axieId, { gasPrice: customGasPrice });
+
+// Works with all transaction functions
+await buyMarketplaceOrder(axieId, wallet, token, apiKey, { gasPrice: customGasPrice });
+```
+
+By default, all transactions now fetch the current gas price from the network, which helps avoid issues during network congestion. If you need a specific gas price, you can override it with the `gasPrice` option.
 
 ## Building from source
 

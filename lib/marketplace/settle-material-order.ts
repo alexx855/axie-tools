@@ -1,5 +1,5 @@
-import { AbiCoder, Signer, TransactionReceipt, parseUnits } from "ethers";
-import { apiRequest, getMarketplaceApi } from "../utils";
+import { AbiCoder, Signer, TransactionReceipt } from "ethers";
+import { apiRequest, getMarketplaceApi, getGasPrice, type GasPriceOptions } from "../utils";
 import {
   getMarketplaceContract,
   getWETHContract,
@@ -13,6 +13,7 @@ export async function buyMaterialOrder(
   signer: Signer,
   accessToken: string,
   skyMavisApiKey: string,
+  options?: GasPriceOptions,
 ): Promise<TransactionReceipt | false> {
   const query = MATERIAL_QUERIES.GET_MATERIAL_ORDERS;
 
@@ -188,13 +189,15 @@ export async function buyMaterialOrder(
 
       const marketplaceContract = getMarketplaceContract(signer);
 
+      const gasPrice = await getGasPrice(signer, options);
+
       // Estimate gas for gateway call
       const gatewayGasEstimate =
         await marketplaceContract.interactWith.estimateGas(
           "ERC1155_EXCHANGE",
           orderExchangeData,
           {
-            gasPrice: parseUnits("26", "gwei"),
+            gasPrice,
           },
         );
 
@@ -202,7 +205,7 @@ export async function buyMaterialOrder(
         "ERC1155_EXCHANGE",
         orderExchangeData,
         {
-          gasPrice: parseUnits("26", "gwei"),
+          gasPrice,
           gasLimit: Math.min(Number(gatewayGasEstimate) + 50000, 600000),
         },
       );

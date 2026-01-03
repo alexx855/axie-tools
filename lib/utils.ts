@@ -1,5 +1,5 @@
 import prompts from "prompts";
-import { JsonRpcProvider, formatEther } from "ethers";
+import { JsonRpcProvider, formatEther, Signer, parseUnits } from "ethers";
 import {
   getAxieContract,
   getWETHContract,
@@ -8,6 +8,51 @@ import {
 } from "./contracts";
 import { getAxieIdsFromAccount } from "./axie";
 import { getUserMaterials } from "./material";
+
+/**
+ * Options for gas price configuration
+ */
+export interface GasPriceOptions {
+  /** Custom gas price in wei. If provided, this value will be used instead of fetching from provider */
+  gasPrice?: bigint;
+}
+
+/**
+ * Get gas price - either uses custom provided value or fetches current price from provider
+ * @param signerOrProvider - A Signer or Provider instance to fetch gas price from
+ * @param options - Optional gas price configuration
+ * @returns Gas price as bigint
+ */
+export async function getGasPrice(
+  signerOrProvider: Signer | JsonRpcProvider,
+  options?: GasPriceOptions,
+): Promise<bigint> {
+  // If custom gas price is provided, use it
+  if (options?.gasPrice !== undefined) {
+    return options.gasPrice;
+  }
+
+  // Otherwise fetch from provider
+  let provider: JsonRpcProvider;
+  if ("provider" in signerOrProvider && signerOrProvider.provider) {
+    provider = signerOrProvider.provider as JsonRpcProvider;
+  } else {
+    provider = signerOrProvider as JsonRpcProvider;
+  }
+
+  try {
+    const feeData = await provider.getFeeData();
+    // Use gasPrice from feeData, fallback to a reasonable default if null
+    if (feeData.gasPrice) {
+      return feeData.gasPrice;
+    }
+  } catch (error) {
+    console.warn("Could not fetch gas price from network, using fallback.", error);
+  }
+
+  // Fallback default
+  return parseUnits("26", "gwei");
+}
 
 export function createProvider(skyMavisApiKey: string): JsonRpcProvider {
   return new JsonRpcProvider(

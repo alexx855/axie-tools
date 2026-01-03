@@ -1,13 +1,17 @@
-import { Signer, parseUnits } from "ethers";
+import { Signer } from "ethers";
 import {
   getAxieContract,
   getWETHContract,
   getMaterialContract,
   getMarketplaceContract,
 } from "../contracts";
+import { getGasPrice, type GasPriceOptions } from "../utils";
 
 // check and approve the axie contract to transfer axies from address to the marketplace contract
-export async function approveMarketplaceContract(signer: Signer) {
+export async function approveMarketplaceContract(
+  signer: Signer,
+  options?: GasPriceOptions,
+) {
   const axieContract = getAxieContract(signer);
   const marketplaceContract = getMarketplaceContract();
   const address = await signer.getAddress();
@@ -19,15 +23,16 @@ export async function approveMarketplaceContract(signer: Signer) {
   );
 
   if (!isApproved) {
+    const gasPrice = await getGasPrice(signer, options);
     const tx = await axieContract.setApprovalForAll(marketplaceAddress, true, {
-      gasPrice: parseUnits("26", "gwei"),
+      gasPrice,
     });
     const receipt = await tx.wait();
   }
   return isApproved;
 }
 
-export async function approveWETH(signer: Signer) {
+export async function approveWETH(signer: Signer, options?: GasPriceOptions) {
   const address = await signer.getAddress();
   const wethContract = getWETHContract(signer);
   const marketplaceContract = getMarketplaceContract();
@@ -41,11 +46,12 @@ export async function approveWETH(signer: Signer) {
   if (currentAllowance === 0n) {
     const amountToApprove =
       "115792089237316195423570985008687907853269984665640564039457584007913129639935"; // same as app.axie
+    const gasPrice = await getGasPrice(signer, options);
     const txApproveWETH = await wethContract.approve(
       marketplaceAddress,
       amountToApprove,
       {
-        gasPrice: parseUnits("26", "gwei"),
+        gasPrice,
       },
     );
     const txApproveReceipt = await txApproveWETH.wait();
@@ -57,6 +63,7 @@ export async function approveWETH(signer: Signer) {
 export async function approveBatchTransfer(
   signer: Signer,
   batchTransferAddress: string,
+  options?: GasPriceOptions,
 ): Promise<void> {
   const address = await signer.getAddress();
   const axieContract = getAxieContract(signer);
@@ -65,18 +72,22 @@ export async function approveBatchTransfer(
     batchTransferAddress,
   );
   if (!isApproved) {
+    const gasPrice = await getGasPrice(signer, options);
     const approveTx = await axieContract.setApprovalForAll(
       batchTransferAddress,
       true,
       {
-        gasPrice: parseUnits("26", "gwei"),
+        gasPrice,
       },
     );
     await approveTx.wait();
   }
 }
 
-export async function approveMaterialMarketplace(signer: Signer) {
+export async function approveMaterialMarketplace(
+  signer: Signer,
+  options?: GasPriceOptions,
+) {
   const materialContract = getMaterialContract(signer);
   const marketplaceContract = getMarketplaceContract();
   const address = await signer.getAddress();
@@ -88,11 +99,12 @@ export async function approveMaterialMarketplace(signer: Signer) {
   );
 
   if (!isApproved) {
+    const gasPrice = await getGasPrice(signer, options);
     const tx = await materialContract.setApprovalForAll(
       marketplaceAddress,
       true,
       {
-        gasPrice: parseUnits("26", "gwei"),
+        gasPrice,
       },
     );
     const receipt = await tx.wait();

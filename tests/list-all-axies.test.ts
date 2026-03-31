@@ -8,7 +8,8 @@ test("lists all owned axies using Multicall3", async () => {
   }
 
   // Test address with 200+ Axies
-  const address = process.env.TEST_ADDRESS || "0xA7D8cA624656922c633732fA2F327F504678d132";
+  const address =
+    process.env.TEST_ADDRESS || "0xA7D8cA624656922c633732fA2F327F504678d132";
 
   const provider = createProvider(skyMavisApiKey);
 
@@ -19,7 +20,7 @@ test("lists all owned axies using Multicall3", async () => {
 
   // Verify we got an array of numbers
   expect(Array.isArray(axieIds)).toBe(true);
-  
+
   if (axieIds.length > 0) {
     // Verify all items are numbers
     axieIds.forEach((id) => {
@@ -28,7 +29,8 @@ test("lists all owned axies using Multicall3", async () => {
 
     // Print comma-separated IDs (first 100 chars to keep output reasonable)
     const csvFormat = axieIds.join(",");
-    const preview = csvFormat.length > 100 ? csvFormat.slice(0, 100) + "..." : csvFormat;
+    const preview =
+      csvFormat.length > 100 ? csvFormat.slice(0, 100) + "..." : csvFormat;
     console.log(`\n📋 CSV Format (preview):\n${preview}`);
     console.log(`\n✅ All ${axieIds.length} Axie IDs ready for export`);
   }

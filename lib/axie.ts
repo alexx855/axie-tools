@@ -94,11 +94,17 @@ export async function getAxieIdsFromAccount(
   // Create array of calls for tokenOfOwnerByIndex
   const calls = Array.from({ length: balanceNum }, (_, i) => ({
     target: axieContractAddress,
-    callData: axieContract.interface.encodeFunctionData("tokenOfOwnerByIndex", [address, i]),
+    callData: axieContract.interface.encodeFunctionData("tokenOfOwnerByIndex", [
+      address,
+      i,
+    ]),
   }));
 
   // Execute multicall using tryAggregate (read-only version) via staticCall
-  const results = await multicall3Contract.tryAggregate.staticCall(false, calls);
+  const results = await multicall3Contract.tryAggregate.staticCall(
+    false,
+    calls,
+  );
 
   // Decode results
   const axieIds: number[] = [];

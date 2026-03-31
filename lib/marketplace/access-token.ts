@@ -67,7 +67,9 @@ export const getTokenExpirationInfo = (token: string): TokenExpirationInfo => {
     const hours = Math.floor(pastSeconds / 3600);
     const minutes = Math.floor((pastSeconds % 3600) / 60);
     humanReadable =
-      hours > 0 ? `expired ${hours}h ${minutes}m ago` : `expired ${minutes}m ago`;
+      hours > 0
+        ? `expired ${hours}h ${minutes}m ago`
+        : `expired ${minutes}m ago`;
   } else {
     const hours = Math.floor(expiresInSeconds / 3600);
     const minutes = Math.floor((expiresInSeconds % 3600) / 60);

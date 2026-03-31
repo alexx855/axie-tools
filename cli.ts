@@ -560,8 +560,8 @@ async function main() {
           }
 
           console.log(`✅ Created auction for Axie ${axieId}!`);
-          console.log(`Start price: ${startPrice} ETH`);
-          console.log(`End price: ${endPrice} ETH`);
+          console.log(`Start price: ${startPrice} WETH`);
+          console.log(`End price: ${endPrice} WETH`);
           console.log(`Duration: ${durationHours} hours`);
           console.log(
             `Current price in USD: ${result.data.createOrder.currentPriceUsd}`,
@@ -880,7 +880,8 @@ async function main() {
           const addressResponse = await prompts({
             type: "text",
             name: "queryAddress",
-            message: "Enter address to export axies from (leave empty for your own):",
+            message:
+              "Enter address to export axies from (leave empty for your own):",
             validate: (value: string) => !value || value.startsWith("0x"),
           });
 

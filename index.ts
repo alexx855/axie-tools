@@ -1,5 +1,8 @@
 import { getAxieIdsFromAccount } from "./lib/axie";
-import { refreshToken, getTokenExpirationInfo } from "./lib/marketplace/access-token";
+import {
+  refreshToken,
+  getTokenExpirationInfo,
+} from "./lib/marketplace/access-token";
 import {
   getAxieContract,
   getUSDCContract,

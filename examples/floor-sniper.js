@@ -6,7 +6,7 @@ import "dotenv/config";
 // Polls the marketplace for the cheapest Axie and buys when it drops below your target price
 //
 // Usage:
-//   node floor-sniper.js <targetPriceETH> [pollIntervalSeconds]
+//   node floor-sniper.js <targetPriceWETH> [pollIntervalSeconds]
 //
 // Example:
 //   node floor-sniper.js 0.001 30

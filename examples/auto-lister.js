@@ -63,7 +63,7 @@ await approveMarketplaceContract(wallet);
 // List each Axie
 const currentBlock = await provider.getBlock("latest");
 const startedAt = currentBlock.timestamp;
-const expiredAt = startedAt + 15634800; // ~6 months
+const expiredAt = startedAt + 15634800; // ~6 months (max listing duration)
 
 let listed = 0;
 let failed = 0;

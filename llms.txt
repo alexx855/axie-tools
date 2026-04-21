@@ -1,0 +1,53 @@
+# Axie Tools
+
+> TypeScript SDK and CLI for Axie Infinity marketplace automation on Ronin.
+
+This repository performs live marketplace and blockchain operations. Treat private keys, access tokens, approvals, transfers, and buy flows as high risk.
+
+## Primary docs
+
+- [README](https://github.com/alexx855/axie-tools/blob/main/README.md): install flow, common tasks, API reference, and example scripts.
+- [AGENTS.md](https://github.com/alexx855/axie-tools/blob/main/AGENTS.md): repo map, safety notes, common commands, and task routing.
+- [Examples guide](https://github.com/alexx855/axie-tools/blob/main/examples/README.md): setup, per-script env vars, side effects, and risk levels.
+- [Contributing](https://github.com/alexx855/axie-tools/blob/main/CONTRIBUTING.md): contributor workflow.
+
+## Entry points
+
+- [index.ts](https://github.com/alexx855/axie-tools/blob/main/index.ts): public library exports.
+- [cli.ts](https://github.com/alexx855/axie-tools/blob/main/cli.ts): interactive CLI.
+- [lib/marketplace/](https://github.com/alexx855/axie-tools/tree/main/lib/marketplace): approvals, order creation, cancellation, settlement, and token refresh.
+
+## Safe starting points
+
+- `getAxieFloorPrice(apiKey)`
+- `getMaterialFloorPrice(materialId, apiKey, quantity?)`
+- `getAxieIdsFromAccount(address, provider)`
+- `getAccountInfo(address, provider, apiKey)`
+- `validateMaterialToken(materialId, apiKey)`
+- `getTokenExpirationInfo(token)`
+
+## Live write operations
+
+- `approveWETH(wallet)`
+- `approveMarketplaceContract(wallet)`
+- `approveMaterialMarketplace(wallet)`
+- `approveBatchTransfer(wallet)`
+- `buyMarketplaceOrder(...)`
+- `createMarketplaceOrder(...)`
+- `cancelMarketplaceOrder(...)`
+- `buyMaterialOrder(...)`
+- `createMaterialMarketplaceOrder(...)`
+- `cancelMaterialOrder(...)`
+- `transferAxie(...)`
+- `batchTransferAxies(...)`
+
+## Example scripts
+
+- [floor-sniper.js](https://github.com/alexx855/axie-tools/blob/main/examples/floor-sniper.js): loop that watches floor price and auto-buys.
+- [auto-lister.js](https://github.com/alexx855/axie-tools/blob/main/examples/auto-lister.js): lists all owned Axies using floor-based pricing.
+- [settle-order.js](https://github.com/alexx855/axie-tools/blob/main/examples/settle-order.js): buy one Axie.
+- [create-order.js](https://github.com/alexx855/axie-tools/blob/main/examples/create-order.js): list one Axie.
+- [create-order-auction.js](https://github.com/alexx855/axie-tools/blob/main/examples/create-order-auction.js): create one auction.
+- [cancel-order.js](https://github.com/alexx855/axie-tools/blob/main/examples/cancel-order.js): cancel one Axie listing.
+- [material-order.js](https://github.com/alexx855/axie-tools/blob/main/examples/material-order.js): list Materials.
+- [transfer-all.js](https://github.com/alexx855/axie-tools/blob/main/examples/transfer-all.js): transfer up to 100 owned Axies.

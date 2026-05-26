@@ -26,6 +26,11 @@ This repository performs live marketplace and blockchain operations. Treat priva
 - `validateMaterialToken(materialId, apiKey)`
 - `getTokenExpirationInfo(token)`
 
+## Agent and payment experiments
+
+- [x402 agent service](examples/x402-agent-service/): experimental paid read-only HTTP API for AI agents.
+- Use the x402 example for market-data revenue tests only. It does not expose private keys, buys, listings, cancellations, transfers, or marketplace access tokens.
+
 ## Live write operations
 
 - `approveWETH(wallet)`

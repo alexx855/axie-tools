@@ -1,6 +1,7 @@
 # Development files
 .env
 .env.example
+!examples/x402-agent-service/.env.example
 .nvmrc
 .npmrc
 tsconfig.json

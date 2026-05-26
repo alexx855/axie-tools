@@ -169,6 +169,12 @@ Ready-to-use bot templates in the [examples folder](./examples/):
 | [floor-sniper.js](./examples/floor-sniper.js) | Polls floor price, auto-buys when it drops below target |
 | [auto-lister.js](./examples/auto-lister.js) | Lists all owned Axies at floor price with configurable markup |
 
+## AI agent and x402 revenue experiment
+
+This experiment includes an [x402 agent service](./examples/x402-agent-service/) that exposes read-only Axie market data as paid HTTP endpoints for agents and automation clients. It starts with floor-price and account-inspection endpoints only, so it can test usage-based revenue without exposing private keys, buys, listings, cancellations, or transfers.
+
+The intended path is: paid read-only API first, MCP gateway second, and any write/trading actions later behind a separate policy and confirmation layer.
+
 ```bash
 cd examples && npm install
 

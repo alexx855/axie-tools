@@ -50,6 +50,12 @@ node floor-sniper.js 0.001 30
 node auto-lister.js 1.1
 ```
 
+## Agent API experiments
+
+| Example | Purpose | Side effects | Risk |
+| --- | --- | --- | --- |
+| [`x402-agent-service`](./x402-agent-service/) | Paid read-only HTTP API for AI agents using x402 | Charges clients for API responses; no marketplace writes | Low |
+
 ## Single operations
 
 These are useful building blocks when you want explicit control over one action at a time.

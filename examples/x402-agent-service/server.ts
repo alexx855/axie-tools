@@ -28,6 +28,7 @@ const payTo = requiredEnvValue("X402_PAY_TO");
 const network = (process.env.X402_NETWORK ?? "eip155:8453") as Network;
 const facilitatorUrl =
   process.env.X402_FACILITATOR_URL ?? "https://x402.org/facilitator";
+const provider = createProvider(skyMavisApiKey);
 
 const resourceServer = new x402ResourceServer(
   new HTTPFacilitatorClient({ url: facilitatorUrl }),
@@ -95,12 +96,14 @@ app.use("/paid/material-floor", (req, res, next) => {
 });
 
 app.use("/paid/account-info", (req, res, next) => {
-  const address = firstQueryValue(req.query.address);
+  const address = normalizeRoninAddress(firstQueryValue(req.query.address));
 
   if (!address) {
     res.status(400).json({ error: "Missing required query param: address" });
     return;
   }
+
+  req.query.address = address;
 
   if (!isAddress(address)) {
     res.status(400).json({ error: "Invalid Ronin/EVM address" });
@@ -181,7 +184,7 @@ app.get("/paid/material-floor", async (req, res, next) => {
 
 app.get("/paid/account-info", async (req, res, next) => {
   try {
-    const address = firstQueryValue(req.query.address);
+    const address = normalizeRoninAddress(firstQueryValue(req.query.address));
 
     if (!address) {
       res.status(400).json({ error: "Missing required query param: address" });
@@ -193,7 +196,6 @@ app.get("/paid/account-info", async (req, res, next) => {
       return;
     }
 
-    const provider = createProvider(skyMavisApiKey);
     const account = await getAccountInfo(address, provider, skyMavisApiKey);
 
     res.json({
@@ -229,11 +231,8 @@ app.listen(port, () => {
 });
 
 function firstQueryValue(value: unknown): string | undefined {
-  if (Array.isArray(value)) {
-    return typeof value[0] === "string" ? value[0] : undefined;
-  }
-
-  return typeof value === "string" && value.length > 0 ? value : undefined;
+  const str = Array.isArray(value) ? value[0] : value;
+  return typeof str === "string" && str.length > 0 ? str : undefined;
 }
 
 function requiredEnvValue(key: (typeof requiredEnv)[number]): string {
@@ -243,6 +242,16 @@ function requiredEnvValue(key: (typeof requiredEnv)[number]): string {
   }
 
   return value;
+}
+
+function normalizeRoninAddress(
+  address: string | undefined,
+): string | undefined {
+  if (!address?.toLowerCase().startsWith("ronin:")) {
+    return address;
+  }
+
+  return `0x${address.slice("ronin:".length)}`;
 }
 
 function parseOptionalPositiveInteger(value: unknown): {

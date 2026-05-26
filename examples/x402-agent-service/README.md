@@ -31,11 +31,14 @@ Edit `.env`:
 
 ```bash
 SKYMAVIS_API_KEY=...
-X402_PAY_TO=0xYourBaseSepoliaReceivingWallet
-X402_NETWORK=eip155:84532
+X402_PAY_TO=0xYourBaseMainnetReceivingWallet
+X402_NETWORK=eip155:8453
 ```
 
-Use Base Sepolia while testing. Move to Base mainnet only after the service and pricing are proven.
+Use mainnet settlement only. At the time this example was added, the public
+`https://x402.org/facilitator` did not advertise Base mainnet (`eip155:8453`)
+support, so live payments require a mainnet-capable x402 facilitator before the
+server can start successfully.
 
 ## Run the server
 
@@ -57,7 +60,7 @@ curl -i http://localhost:4021/paid/axie-floor
 
 ## Test a paying client
 
-Fund a low-value Base Sepolia wallet with test USDC, set:
+Fund a low-value Base mainnet wallet with USDC, set:
 
 ```bash
 EVM_PRIVATE_KEY=0x...

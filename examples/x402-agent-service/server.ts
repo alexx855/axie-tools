@@ -25,7 +25,7 @@ for (const key of requiredEnv) {
 const port = Number(process.env.PORT ?? 4021);
 const skyMavisApiKey = requiredEnvValue("SKYMAVIS_API_KEY");
 const payTo = requiredEnvValue("X402_PAY_TO");
-const network = (process.env.X402_NETWORK ?? "eip155:84532") as Network;
+const network = (process.env.X402_NETWORK ?? "eip155:8453") as Network;
 const facilitatorUrl =
   process.env.X402_FACILITATOR_URL ?? "https://x402.org/facilitator";
 

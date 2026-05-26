@@ -9,7 +9,7 @@ import { privateKeyToAccount } from "viem/accounts";
 
 const privateKey = process.env.EVM_PRIVATE_KEY;
 const apiUrl = process.env.API_URL ?? "http://localhost:4021/paid/axie-floor";
-const network = (process.env.X402_NETWORK ?? "eip155:84532") as Network;
+const network = (process.env.X402_NETWORK ?? "eip155:8453") as Network;
 
 if (!privateKey) {
   throw new Error("Missing required env var: EVM_PRIVATE_KEY");

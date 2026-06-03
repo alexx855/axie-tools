@@ -152,12 +152,15 @@ const getPrice = async (
   skyMavisApiKey?: string,
   quantity?: number,
   isAxie = false,
-  consumableId?: string,
+  consumableIdOrMessage?: string,
 ) => {
-  let message: string;
-  message = optional
-    ? "💰 Enter Price (in WETH, leave empty to use floor price):"
-    : "💰 Enter Price (in WETH):";
+  const customMessage = isAxie ? consumableIdOrMessage : undefined;
+  const consumableId = !isAxie ? consumableIdOrMessage : undefined;
+  const message = customMessage
+    ? customMessage
+    : optional
+      ? "💰 Enter Price (in WETH, leave empty to use floor price):"
+      : "💰 Enter Price (in WETH):";
 
   const response = await prompts({
     type: "text",

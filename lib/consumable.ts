@@ -303,61 +303,72 @@ export async function getConsumableFloorPrice(
   const { graphqlUrl, headers } = getMarketplaceApi(skyMavisApiKey);
 
   try {
-    const response = await fetch(graphqlUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...headers },
-      body: JSON.stringify({
-        query: `query GetErc1155Orders($tokenType: Erc1155Type!, $tokenId: String, $sort: SortBy = PriceAsc) {
-          erc1155Token(tokenType: $tokenType, tokenId: $tokenId) {
-            orders(from: 0, size: 50, sort: $sort) {
-              data { currentPrice expiredAt assets { availableQuantity } }
-            }
-          }
-        }`,
-        variables: {
-          tokenType: "Consumable",
-          tokenId: consumableId,
-          sort: "PriceAsc",
-        },
-      }),
-    });
-
-    const { data } = await response.json();
-    const orders = data?.erc1155Token?.orders?.data || [];
-
-    const validOrders = orders.filter(
-      (order: any) =>
-        order.expiredAt * 1000 > Date.now() &&
-        order.assets?.[0]?.availableQuantity &&
-        parseInt(order.assets[0].availableQuantity) > 0,
-    );
-
-    if (validOrders.length === 0) {
-      return null;
-    }
-
-    if (!requestedQuantity || requestedQuantity <= 0) {
-      const cheapestOrder = validOrders[0];
-      return (Number(cheapestOrder.currentPrice) / 1e18).toFixed(6);
-    }
-
-    let remainingQuantity = requestedQuantity;
+    const pageSize = 50;
+    let from = 0;
+    let totalOrders = Number.POSITIVE_INFINITY;
+    const quantityNeeded = requestedQuantity ?? 0;
+    let remainingQuantity = quantityNeeded;
     let totalCost = 0;
-    let ordersUsed = 0;
 
-    for (const order of validOrders) {
-      const availableQuantity = parseInt(order.assets[0].availableQuantity);
-      const quantityToUse = Math.min(remainingQuantity, availableQuantity);
-      const orderPrice = Number(order.currentPrice) / 1e18;
+    while (from < totalOrders) {
+      const response = await fetch(graphqlUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...headers },
+        body: JSON.stringify({
+          query: `query GetErc1155Orders($tokenType: Erc1155Type!, $tokenId: String, $from: Int!, $size: Int!, $sort: SortBy = PriceAsc) {
+            erc1155Token(tokenType: $tokenType, tokenId: $tokenId) {
+              orders(from: $from, size: $size, sort: $sort) {
+                total
+                data { currentPrice expiredAt assets { availableQuantity } }
+              }
+            }
+          }`,
+          variables: {
+            tokenType: "Consumable",
+            tokenId: consumableId,
+            from,
+            size: pageSize,
+            sort: "PriceAsc",
+          },
+        }),
+      });
 
-      totalCost += quantityToUse * orderPrice;
-      remainingQuantity -= quantityToUse;
-      ordersUsed++;
+      const { data } = await response.json();
+      const orders = data?.erc1155Token?.orders?.data || [];
+      totalOrders = data?.erc1155Token?.orders?.total ?? from + orders.length;
 
-      if (remainingQuantity <= 0) {
-        const averagePrice = totalCost / requestedQuantity;
-        return averagePrice.toFixed(6);
+      const validOrders = orders.filter(
+        (order: any) =>
+          order.expiredAt * 1000 > Date.now() &&
+          order.assets?.[0]?.availableQuantity &&
+          parseInt(order.assets[0].availableQuantity) > 0,
+      );
+
+      if (quantityNeeded <= 0) {
+        const cheapestOrder = validOrders[0];
+        if (cheapestOrder) {
+          return (Number(cheapestOrder.currentPrice) / 1e18).toFixed(6);
+        }
       }
+
+      for (const order of validOrders) {
+        const availableQuantity = parseInt(order.assets[0].availableQuantity);
+        const quantityToUse = Math.min(remainingQuantity, availableQuantity);
+        const orderPrice = Number(order.currentPrice) / 1e18;
+
+        totalCost += quantityToUse * orderPrice;
+        remainingQuantity -= quantityToUse;
+
+        if (remainingQuantity <= 0) {
+          const averagePrice = totalCost / quantityNeeded;
+          return averagePrice.toFixed(6);
+        }
+      }
+
+      if (orders.length < pageSize) {
+        break;
+      }
+      from += orders.length;
     }
 
     return null;

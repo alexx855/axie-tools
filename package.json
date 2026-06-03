@@ -20,9 +20,9 @@
     "test:create-order-materials": "MATERIAL_ID=<$MATERIAL_ID> QUANTITY=<$QUANTITY> PRICE=<$PRICE> bun test tests/create-order-materials.test.ts --timeout 30000",
     "test:cancel-order-materials": "MATERIAL_ID=<$MATERIAL_ID> QUANTITY=<$QUANTITY> PRICE=<$PRICE> bun test tests/cancel-order-materials.test.ts --timeout 30000",
     "test:settle-order-materials": "MATERIAL_ID=<$MATERIAL_ID> QUANTITY=<$QUANTITY> PRICE=<$PRICE> bun test tests/settle-order-materials.test.ts --timeout 30000",
-    "test:create-order-consumables": "CONSUMABLE_ID=<$CONSUMABLE_ID> QUANTITY=<$QUANTITY> PRICE=<$PRICE> bun test tests/create-order-consumables.test.ts --timeout 30000",
-    "test:cancel-order-consumables": "CONSUMABLE_ID=<$CONSUMABLE_ID> QUANTITY=<$QUANTITY> PRICE=<$PRICE> bun test tests/cancel-order-consumables.test.ts --timeout 30000",
-    "test:settle-order-consumables": "CONSUMABLE_ID=<$CONSUMABLE_ID> QUANTITY=<$QUANTITY> PRICE=<$PRICE> bun test tests/settle-order-consumables.test.ts --timeout 30000"
+    "test:create-order-consumables": "CONSUMABLE_ID=$CONSUMABLE_ID QUANTITY=$QUANTITY PRICE=$PRICE bun test tests/create-order-consumables.test.ts --timeout 30000",
+    "test:cancel-order-consumables": "CONSUMABLE_ID=$CONSUMABLE_ID QUANTITY=$QUANTITY PRICE=$PRICE bun test tests/cancel-order-consumables.test.ts --timeout 30000",
+    "test:settle-order-consumables": "CONSUMABLE_ID=$CONSUMABLE_ID QUANTITY=$QUANTITY PRICE=$PRICE bun test tests/settle-order-consumables.test.ts --timeout 30000"
   },
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",

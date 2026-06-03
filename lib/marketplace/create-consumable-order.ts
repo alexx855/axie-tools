@@ -52,7 +52,8 @@ export async function createConsumableMarketplaceOrder(
     expiredAt,
   } = orderData;
   const makerAddress = address.replace("ronin:", "0x");
-  const nonce = options?.nonce || "0";
+  const provider = createProvider(skyMavisApiKey);
+  const signerWithProvider = signer.connect(provider);
 
   // Get contract addresses
   const CONSUMABLE_CONTRACT_ADDRESS =
@@ -68,6 +69,11 @@ export async function createConsumableMarketplaceOrder(
     chainId: "2020",
     verifyingContract: MARKETPLACE_CONTRACT_ADDRESS,
   };
+
+  const marketGatewayContract = getMarketplaceContract(signerWithProvider);
+  const currentNonce =
+    options?.nonce ?? (await marketGatewayContract.makerNonce(makerAddress));
+  const nonce = currentNonce.toString();
 
   console.log(`🔍 Checking ownership for address: ${makerAddress}`);
 
@@ -128,9 +134,6 @@ export async function createConsumableMarketplaceOrder(
     expectedState: "0",
     nonce,
   };
-
-  const provider = createProvider(skyMavisApiKey);
-  const signerWithProvider = signer.connect(provider);
 
   const signature = await signerWithProvider.signTypedData(
     domain,

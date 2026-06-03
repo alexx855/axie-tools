@@ -51,9 +51,12 @@ export async function createConsumableMarketplaceOrder(
     endedAt,
     expiredAt,
   } = orderData;
+  const makerAddress = address.replace("ronin:", "0x");
+  const nonce = options?.nonce || "0";
 
   // Get contract addresses
-  const CONSUMABLE_CONTRACT_ADDRESS = await getConsumableContract().getAddress();
+  const CONSUMABLE_CONTRACT_ADDRESS =
+    await getConsumableContract().getAddress();
   const WETH_CONTRACT_ADDRESS = await getWETHContract().getAddress();
   const MARKETPLACE_CONTRACT_ADDRESS =
     await getMarketplaceContract().getAddress();
@@ -66,11 +69,11 @@ export async function createConsumableMarketplaceOrder(
     verifyingContract: MARKETPLACE_CONTRACT_ADDRESS,
   };
 
-  console.log(`🔍 Checking ownership for address: ${address}`);
+  console.log(`🔍 Checking ownership for address: ${makerAddress}`);
 
   const ownership = await checkConsumableOwnership(
     consumableId,
-    address,
+    makerAddress,
     skyMavisApiKey,
     accessToken,
   );
@@ -107,7 +110,7 @@ export async function createConsumableMarketplaceOrder(
 
   // Consumable order to sign (exact structure from working example)
   const orderToSign = {
-    maker: address.replace("ronin:", "0x"), // Use Ethereum address format for signing
+    maker: makerAddress, // Use Ethereum address format for signing
     kind: "1", // Sell order
     asset: {
       // Note: 'asset' (singular) like working example
@@ -123,7 +126,7 @@ export async function createConsumableMarketplaceOrder(
     endedAt: "0", // Fixed price listing
     endedUnitPrice: "0",
     expectedState: "0",
-    nonce: options?.nonce || "0",
+    nonce,
   };
 
   const provider = createProvider(skyMavisApiKey);
@@ -197,8 +200,8 @@ export async function createConsumableMarketplaceOrder(
   // API payload for consumable order (uses 'assets' array format for API)
   const variables = {
     order: {
-      maker: address.replace("ronin:", "0x"), // Use 0x format for API
-      nonce: 0, // Hardcoded as per working example
+      maker: makerAddress, // Use 0x format for API
+      nonce: Number(nonce),
       assets: [
         {
           id: consumableId,

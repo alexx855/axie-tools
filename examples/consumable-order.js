@@ -2,8 +2,6 @@ import { parseEther, Wallet } from "ethers";
 import {
   approveConsumableMarketplace,
   createConsumableMarketplaceOrder,
-  buyConsumableOrder,
-  cancelConsumableOrder,
   createProvider,
   getConsumableFloorPrice,
 } from "axie-tools";

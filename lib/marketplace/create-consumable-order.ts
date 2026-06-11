@@ -46,9 +46,7 @@ export async function createConsumableMarketplaceOrder(
     consumableId,
     quantity: inputQuantity,
     unitPrice,
-    endedUnitPrice,
     startedAt,
-    endedAt,
     expiredAt,
   } = orderData;
   const makerAddress = address.replace("ronin:", "0x");

@@ -1,13 +1,14 @@
 import { test, expect } from "bun:test";
 import { buyConsumableOrder } from "../lib/marketplace/settle-consumable-order";
-import { Wallet, Contract } from "ethers";
+import { Wallet } from "ethers";
 import { ensureMarketplaceToken, createProvider } from "../lib/utils";
 import { validateConsumableToken } from "../lib/consumable";
 import { approveWETH } from "../lib/marketplace/approve";
 import { getWETHContract } from "../lib/contracts";
 
 test("settle consumable order", async () => {
-  const { PRIVATE_KEY, SKYMAVIS_API_KEY, CONSUMABLE_ID, QUANTITY } = process.env;
+  const { PRIVATE_KEY, SKYMAVIS_API_KEY, CONSUMABLE_ID, QUANTITY } =
+    process.env;
 
   if (!PRIVATE_KEY || !SKYMAVIS_API_KEY || !CONSUMABLE_ID) {
     throw new Error(

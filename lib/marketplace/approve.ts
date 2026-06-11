@@ -120,7 +120,8 @@ export async function approveConsumableMarketplace(signer: Signer) {
         gasPrice: parseUnits("26", "gwei"),
       },
     );
-    const receipt = await tx.wait();
+    await tx.wait();
+    isApproved = true;
   }
   return isApproved;
 }

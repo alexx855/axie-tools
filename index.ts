@@ -24,7 +24,10 @@ import {
 } from "./lib/utils";
 import { getAxieFloorPrice } from "./lib/axie";
 import { getMaterialFloorPrice, validateMaterialToken } from "./lib/material";
-import { getConsumableFloorPrice, validateConsumableToken } from "./lib/consumable";
+import {
+  getConsumableFloorPrice,
+  validateConsumableToken,
+} from "./lib/consumable";
 import cancelMarketplaceOrder from "./lib/marketplace/cancel-order";
 import cancelMaterialOrder from "./lib/marketplace/cancel-material-order";
 import cancelConsumableOrder from "./lib/marketplace/cancel-consumable-order";

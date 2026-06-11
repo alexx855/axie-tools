@@ -3,7 +3,7 @@
   "version": "1.7.7",
   "type": "module",
   "packageManager": "pnpm@10.33.2",
-  "description": "TypeScript SDK for building Axie Infinity trading bots and AI agents on Ronin network. Programmatic marketplace operations for Axies and Materials (buy/sell/delist), batch transfers, floor price detection, and wallet management. Includes interactive CLI.",
+  "description": "TypeScript SDK for building Axie Infinity trading bots and AI agents on Ronin network. Programmatic marketplace operations for Axies, Materials, and Consumables (buy/sell/delist), batch transfers, floor price detection, and wallet management. Includes interactive CLI.",
   "scripts": {
     "build": "npm run build:lib && npm run build:cli",
     "build:lib": "esbuild index.ts --bundle --platform=node --format=esm --outfile=dist/index.js --external:ethers --external:@roninbuilders/contracts --external:prompts && tsc --emitDeclarationOnly",
@@ -19,7 +19,10 @@
     "test:settle-order-axie": "AXIE_ID=<$AXIE_ID> PRICE=<$PRICE> bun test tests/settle-order-axie.test.ts --timeout 30000",
     "test:create-order-materials": "MATERIAL_ID=<$MATERIAL_ID> QUANTITY=<$QUANTITY> PRICE=<$PRICE> bun test tests/create-order-materials.test.ts --timeout 30000",
     "test:cancel-order-materials": "MATERIAL_ID=<$MATERIAL_ID> QUANTITY=<$QUANTITY> PRICE=<$PRICE> bun test tests/cancel-order-materials.test.ts --timeout 30000",
-    "test:settle-order-materials": "MATERIAL_ID=<$MATERIAL_ID> QUANTITY=<$QUANTITY> PRICE=<$PRICE> bun test tests/settle-order-materials.test.ts --timeout 30000"
+    "test:settle-order-materials": "MATERIAL_ID=<$MATERIAL_ID> QUANTITY=<$QUANTITY> PRICE=<$PRICE> bun test tests/settle-order-materials.test.ts --timeout 30000",
+    "test:create-order-consumables": "CONSUMABLE_ID=$CONSUMABLE_ID QUANTITY=$QUANTITY PRICE=$PRICE bun test tests/create-order-consumables.test.ts --timeout 30000",
+    "test:cancel-order-consumables": "CONSUMABLE_ID=$CONSUMABLE_ID QUANTITY=$QUANTITY PRICE=$PRICE bun test tests/cancel-order-consumables.test.ts --timeout 30000",
+    "test:settle-order-consumables": "CONSUMABLE_ID=$CONSUMABLE_ID QUANTITY=$QUANTITY PRICE=$PRICE bun test tests/settle-order-consumables.test.ts --timeout 30000"
   },
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -71,7 +74,10 @@
     "axie-bot",
     "market-automation",
     "nft-automation",
-    "ronin-bot"
+    "ronin-bot",
+    "erc1155",
+    "consumables",
+    "materials"
   ],
   "author": {
     "name": "Alex Pedersen",

@@ -3,6 +3,7 @@ import AXIE_PROXY from "@roninbuilders/contracts/axie_proxy";
 import ERC721_BATCH_TRANSFER from "@roninbuilders/contracts/erc_721_batch_transfer";
 import MARKETPLACE_GATEWAY_PROXY from "@roninbuilders/contracts/market_gateway_proxy";
 import MATERIAL_ERC_1155_PROXY from "@roninbuilders/contracts/material_erc_1155_proxy";
+import AXIE_CONSUMABLE_ERC_1155_PROXY from "@roninbuilders/contracts/axie_consumable_erc_1155_proxy";
 import ERC_1155_EXCHANGE from "@roninbuilders/contracts/erc_1155_exchange_21a3764f";
 import USD_COIN from "@roninbuilders/contracts/usd_coin";
 import WRAPPED_ETHER from "@roninbuilders/contracts/wrapped_ether";
@@ -41,6 +42,12 @@ export function getUSDCContract(signerOrProvider?: Signer | Provider) {
 export function getMaterialContract(signerOrProvider?: Signer | Provider) {
   const address = MATERIAL_ERC_1155_PROXY.address;
   const abi = new Interface(MATERIAL_ERC_1155_PROXY.proxy_abi);
+  return new Contract(address, abi, signerOrProvider);
+}
+
+export function getConsumableContract(signerOrProvider?: Signer | Provider) {
+  const address = AXIE_CONSUMABLE_ERC_1155_PROXY.address;
+  const abi = new Interface(AXIE_CONSUMABLE_ERC_1155_PROXY.proxy_abi);
   return new Contract(address, abi, signerOrProvider);
 }
 

@@ -12,17 +12,23 @@ import {
   createProvider,
   validateMaterialToken,
   getMaterialFloorPrice,
+  validateConsumableToken,
+  getConsumableFloorPrice,
   getAxieFloorPrice,
   approveMarketplaceContract,
   approveMaterialMarketplace,
+  approveConsumableMarketplace,
   approveWETH,
   buyMarketplaceOrder,
   buyMaterialOrder,
+  buyConsumableOrder,
   cancelMarketplaceOrder,
   cancelMaterialOrder,
+  cancelConsumableOrder,
   createMarketplaceOrder,
   createMaterialMarketplaceOrder,
   getTokenExpirationInfo,
+  createConsumableMarketplaceOrder,
 } from "./index";
 import "dotenv/config";
 
@@ -80,6 +86,46 @@ const getMaterialId = async (skyMavisApiKey: string) => {
   return response.materialId;
 };
 
+const getConsumableId = async (skyMavisApiKey: string) => {
+  const response = await prompts({
+    type: "text",
+    name: "consumableId",
+    message: "🆔 Enter Consumable ID:",
+    validate: (value: string) => value !== undefined && value.length > 0,
+  });
+  if (response.consumableId === undefined) {
+    console.log("❌ Invalid Consumable ID!");
+    return null;
+  }
+
+  console.log("🔍 Validating consumable token...");
+  const consumableInfo = await validateConsumableToken(
+    response.consumableId,
+    skyMavisApiKey,
+  );
+
+  if (!consumableInfo) {
+    console.log("❌ Consumable ID not found or invalid!");
+    return null;
+  }
+
+  console.log(`✅ Found consumable: ${consumableInfo.name}`);
+  console.log(`📄 Description: ${consumableInfo.description}`);
+  console.log(`📦 Total Supply: ${consumableInfo.totalSupply}`);
+  console.log(`👥 Total Owners: ${consumableInfo.totalOwners}`);
+  if (consumableInfo.minPrice) {
+    console.log(
+      `💰 Min Price: ${(Number(consumableInfo.minPrice) / 1e18).toFixed(6)} WETH`,
+    );
+  }
+  if (consumableInfo.orders) {
+    console.log(`🛒 Listed Quantity: ${consumableInfo.orders.totalListed}`);
+    console.log(`📋 Total Orders: ${consumableInfo.orders.totalOrders}`);
+  }
+
+  return response.consumableId;
+};
+
 const getQuantity = async (optional = false) => {
   const message = optional
     ? "📦 Enter Quantity (leave empty to use all available):"
@@ -106,16 +152,15 @@ const getPrice = async (
   skyMavisApiKey?: string,
   quantity?: number,
   isAxie = false,
-  customMessage?: string,
+  consumableIdOrMessage?: string,
 ) => {
-  let message: string;
-  if (customMessage) {
-    message = customMessage;
-  } else {
-    message = optional
+  const customMessage = isAxie ? consumableIdOrMessage : undefined;
+  const consumableId = !isAxie ? consumableIdOrMessage : undefined;
+  const message = customMessage
+    ? customMessage
+    : optional
       ? "💰 Enter Price (in WETH, leave empty to use floor price):"
       : "💰 Enter Price (in WETH):";
-  }
 
   const response = await prompts({
     type: "text",
@@ -139,6 +184,12 @@ const getPrice = async (
     } else if (materialId) {
       floorPrice = await getMaterialFloorPrice(
         materialId,
+        skyMavisApiKey,
+        quantity,
+      );
+    } else if (consumableId) {
+      floorPrice = await getConsumableFloorPrice(
+        consumableId,
         skyMavisApiKey,
         quantity,
       );
@@ -219,15 +270,27 @@ async function main() {
             title: "Approve Material marketplace",
             value: "approve-material-marketplace",
           },
+          {
+            title: "Approve Consumable marketplace",
+            value: "approve-consumable-marketplace",
+          },
           { title: "Settle axie order (buy axie)", value: "settle" },
           {
             title: "Settle material order (buy material)",
             value: "settle-material",
           },
+          {
+            title: "Settle consumable order (buy consumable)",
+            value: "settle-consumable",
+          },
           { title: "Cancel axie order (delist axie)", value: "cancel" },
           {
             title: "Cancel material order (delist materials)",
             value: "cancel-material",
+          },
+          {
+            title: "Cancel consumable order (delist consumables)",
+            value: "cancel-consumable",
           },
           {
             title: "Cancel all axie orders (delist all axies)",
@@ -237,6 +300,10 @@ async function main() {
           {
             title: "Create material order (list material)",
             value: "create-material",
+          },
+          {
+            title: "Create consumable order (list consumable)",
+            value: "create-consumable",
           },
           {
             title: "Create axie auction (list axie for auction)",
@@ -347,6 +414,10 @@ async function main() {
           await approveMaterialMarketplace(wallet);
           break;
         }
+        case "approve-consumable-marketplace": {
+          await approveConsumableMarketplace(wallet);
+          break;
+        }
         case "settle": {
           const token = await ensureMarketplaceToken();
           const axieId = await getAxieId();
@@ -376,6 +447,29 @@ async function main() {
           await approveWETH(wallet);
           const receipt = await buyMaterialOrder(
             materialId,
+            quantity,
+            wallet,
+            token,
+            skyMavisApiKey,
+          );
+          if (receipt) {
+            console.log("🚀 Transaction successful! Hash:", receipt.hash);
+            console.log(
+              "🔗 View transaction: https://app.roninchain.com/tx/" +
+                receipt.hash,
+            );
+          }
+          break;
+        }
+        case "settle-consumable": {
+          const token = await ensureMarketplaceToken();
+          const consumableId = await getConsumableId(skyMavisApiKey);
+          if (!consumableId) break;
+          const quantity = await getQuantity();
+          if (!quantity) break;
+          await approveWETH(wallet);
+          const receipt = await buyConsumableOrder(
+            consumableId,
             quantity,
             wallet,
             token,
@@ -485,6 +579,57 @@ async function main() {
 
           console.log(
             `✅ Created material order for Material ${materialId}${quantity ? ` (qty: ${quantity})` : " (all available)"}! Current price in USD: ${result.data.createOrder.currentPriceUsd}`,
+          );
+          break;
+        }
+        case "create-consumable": {
+          const consumableId = await getConsumableId(skyMavisApiKey);
+          if (!consumableId) break;
+          const quantity = await getQuantity(true); // Optional quantity
+          const price = await getPrice(
+            true,
+            undefined,
+            skyMavisApiKey,
+            quantity,
+            false,
+            consumableId,
+          ); // Optional price with floor price fallback
+          if (!price) break;
+
+          const token = await ensureMarketplaceToken();
+          await approveConsumableMarketplace(wallet);
+
+          const currentBlock = await provider.getBlock("latest");
+          const startedAt = currentBlock!.timestamp;
+          const expiredAt = startedAt + 15634800; // ~6 months
+
+          const orderData = {
+            address,
+            consumableId: consumableId.toString(),
+            quantity: quantity ? quantity.toString() : undefined,
+            unitPrice: parseEther(price).toString(),
+            endedUnitPrice: "0",
+            startedAt,
+            endedAt: 0,
+            expiredAt,
+          };
+
+          const result = await createConsumableMarketplaceOrder(
+            orderData,
+            token,
+            wallet,
+            skyMavisApiKey,
+          );
+          if (result === null || result.errors || !result.data) {
+            console.error(
+              "❌ Error:",
+              result?.errors?.[0]?.message || "Unknown error",
+            );
+            break;
+          }
+
+          console.log(
+            `✅ Created consumable order for Consumable ${consumableId}${quantity ? ` (qty: ${quantity})` : " (all available)"}! Current price in USD: ${result.data.createOrder.currentPriceUsd}`,
           );
           break;
         }
@@ -756,6 +901,32 @@ async function main() {
           if (result && "canceled" in result && result.canceled > 0) {
             console.log(
               `✅ Successfully cancelled ${result.canceled} material order(s)!`,
+            );
+            if (result.canceledOrders.length > 0) {
+              result.canceledOrders.forEach((order) => {
+                console.log(
+                  "🔗 View transaction: https://app.roninchain.com/tx/" +
+                    order.transactionHash,
+                );
+              });
+            }
+          } else if (result && "message" in result) {
+            console.log("❌", result.message);
+          }
+          break;
+        }
+        case "cancel-consumable": {
+          const consumableId = await getConsumableId(skyMavisApiKey);
+          if (!consumableId) break;
+
+          const result = await cancelConsumableOrder(
+            consumableId,
+            wallet,
+            skyMavisApiKey,
+          );
+          if (result && "canceled" in result && result.canceled > 0) {
+            console.log(
+              `✅ Successfully cancelled ${result.canceled} consumable order(s)!`,
             );
             if (result.canceledOrders.length > 0) {
               result.canceledOrders.forEach((order) => {

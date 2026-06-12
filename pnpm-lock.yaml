@@ -24,8 +24,8 @@ importers:
         specifier: ^2.4.2
         version: 2.4.2
       typescript:
-        specifier: ^5.1.6
-        version: 5.9.2
+        specifier: ^6.0.3
+        version: 6.0.3
     devDependencies:
       '@biomejs/biome':
         specifier: 1.9.4
@@ -347,8 +347,13 @@ packages:
   tslib@2.7.0:
     resolution: {integrity: sha512-gLXCKdN1/j47AiHiOkJN69hJmcbGTHI0ImLmbYLHykhgeN0jVGola9yVjFgzCUklsZQMW55o+dW7IXv3RCXDzA==}
 
-  typescript@5.9.2:
-    resolution: {integrity: sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A==}
+  typescript@5.9.3:
+    resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
+  typescript@6.0.3:
+    resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -495,9 +500,9 @@ snapshots:
 
   '@roninbuilders/contracts@0.6.22':
     dependencies:
-      abitype: 1.1.1(typescript@5.9.2)
+      abitype: 1.1.1(typescript@5.9.3)
       p-queue: 7.4.1
-      typescript: 5.9.2
+      typescript: 5.9.3
     transitivePeerDependencies:
       - zod
 
@@ -524,9 +529,9 @@ snapshots:
     dependencies:
       csstype: 3.2.3
 
-  abitype@1.1.1(typescript@5.9.2):
+  abitype@1.1.1(typescript@5.9.3):
     optionalDependencies:
-      typescript: 5.9.2
+      typescript: 5.9.3
 
   aes-js@4.0.0-beta.5: {}
 
@@ -601,7 +606,9 @@ snapshots:
 
   tslib@2.7.0: {}
 
-  typescript@5.9.2: {}
+  typescript@5.9.3: {}
+
+  typescript@6.0.3: {}
 
   undici-types@5.26.5: {}
 

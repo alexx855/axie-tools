@@ -104,7 +104,7 @@
     "@types/bun": "^1.2.19",
     "@types/node": "^18.15.11",
     "@types/prompts": "^2.4.9",
-    "esbuild": "^0.25.0"
+    "esbuild": "^0.28.1"
   },
   "dependencies": {
     "@roninbuilders/contracts": "^0.6.8",

@@ -34,8 +34,8 @@ importers:
         specifier: ^1.2.19
         version: 1.2.22(@types/react@19.1.13)
       '@types/node':
-        specifier: ^18.15.11
-        version: 18.19.127
+        specifier: ^25.9.3
+        version: 25.9.3
       '@types/prompts':
         specifier: ^2.4.9
         version: 2.4.9
@@ -269,11 +269,11 @@ packages:
   '@types/bun@1.2.22':
     resolution: {integrity: sha512-5A/KrKos2ZcN0c6ljRSOa1fYIyCKhZfIVYeuyb4snnvomnpFqC0tTsEkdqNxbAgExV384OETQ//WAjl3XbYqQA==}
 
-  '@types/node@18.19.127':
-    resolution: {integrity: sha512-gSjxjrnKXML/yo0BO099uPixMqfpJU0TKYjpfLU7TrtA2WWDki412Np/RSTPRil1saKBhvVVKzVx/p/6p94nVA==}
-
   '@types/node@22.7.5':
     resolution: {integrity: sha512-jML7s2NAzMWc//QSJ1a3prpk78cOPchGvXJsC3C6R6PSMoooztvRVQEz89gmBTBY1SPMaqo5teB4uNHPdetShQ==}
+
+  '@types/node@25.9.3':
+    resolution: {integrity: sha512-603BddQMv3pUcr4U2dhujk83N2tTDVr/34wII2B6bJy6g+8WD6yUb11jszNs0gdi4PesVWl7ABt8nYMVpnLUcg==}
 
   '@types/prompts@2.4.9':
     resolution: {integrity: sha512-qTxFi6Buiu8+50/+3DGIWLHM6QuWsEKugJnnP6iv2Mc4ncxE4A/OJkjuVOA+5X0X1S/nq5VJRa8Lu+nwcvbrKA==}
@@ -346,11 +346,11 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
-  undici-types@5.26.5:
-    resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
-
   undici-types@6.19.8:
     resolution: {integrity: sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw==}
+
+  undici-types@7.24.6:
+    resolution: {integrity: sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==}
 
   ws@8.20.1:
     resolution: {integrity: sha512-It4dO0K5v//JtTXuPkfEOaI3uUN87iYPnqo/ZzqCoG3g8uhA66QUMs/SrM0YK7/NAu+r4LMh/9dq2A7k+rHs+w==}
@@ -498,17 +498,17 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
 
-  '@types/node@18.19.127':
-    dependencies:
-      undici-types: 5.26.5
-
   '@types/node@22.7.5':
     dependencies:
       undici-types: 6.19.8
 
+  '@types/node@25.9.3':
+    dependencies:
+      undici-types: 7.24.6
+
   '@types/prompts@2.4.9':
     dependencies:
-      '@types/node': 18.19.127
+      '@types/node': 25.9.3
       kleur: 3.0.3
 
   '@types/react@19.1.13':
@@ -523,7 +523,7 @@ snapshots:
 
   bun-types@1.2.22(@types/react@19.1.13):
     dependencies:
-      '@types/node': 18.19.127
+      '@types/node': 25.9.3
       '@types/react': 19.1.13
 
   csstype@3.2.3: {}
@@ -593,8 +593,8 @@ snapshots:
 
   typescript@5.9.2: {}
 
-  undici-types@5.26.5: {}
-
   undici-types@6.19.8: {}
+
+  undici-types@7.24.6: {}
 
   ws@8.20.1: {}

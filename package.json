@@ -100,7 +100,7 @@
     "axie-tools": "dist/cli.js"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
+    "@biomejs/biome": "2.4.16",
     "@types/bun": "^1.2.19",
     "@types/node": "^18.15.11",
     "@types/prompts": "^2.4.9",

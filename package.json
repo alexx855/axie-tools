@@ -13,7 +13,7 @@
     "start": "node dist/cli.js",
     "dev": "bun cli.ts",
     "format": "biome format . --write",
-    "format:check": "biome ci . --linter-enabled=false --organize-imports-enabled=false --vcs-enabled=true --vcs-client-kind=git --vcs-use-ignore-file=true",
+    "format:check": "biome ci . --linter-enabled=false --assist-enabled=false --vcs-enabled=true --vcs-client-kind=git --vcs-use-ignore-file=true",
     "prepublishOnly": "pnpm build",
     "test:create-order-axie": "AXIE_ID=<$AXIE_ID> PRICE=<$PRICE> bun test tests/create-order-axie.test.ts --timeout 30000",
     "test:cancel-order-axie": "AXIE_ID=<$AXIE_ID> PRICE=<$PRICE> bun test tests/cancel-order-axie.test.ts --timeout 30000",
@@ -34,7 +34,11 @@
   "publishConfig": {
     "access": "public"
   },
-  "files": ["dist/", "README.md", "LICENSE"],
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
   "engines": {
     "node": ">=22"
   },
@@ -100,7 +104,7 @@
     "axie-tools": "dist/cli.js"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
+    "@biomejs/biome": "2.4.16",
     "@types/bun": "^1.2.19",
     "@types/node": "^25.9.3",
     "@types/prompts": "^2.4.9",

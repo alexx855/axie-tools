@@ -5,18 +5,21 @@
 ```bash
 git clone https://github.com/your-username/axie-tools.git
 cd axie-tools
-npm install
-npm run build
+pnpm install
+pnpm build
 ```
 
 ## Development
 
 ```bash
 # Run CLI in dev mode
-bun cli.ts
+pnpm dev
 
 # Format code
-npm run format
+pnpm format
+
+# Check formatting without changing files
+pnpm format:check
 ```
 
 Tests run individually with bun and require environment variables. See the [Testing section in the README](README.md#testing) for specific commands.
@@ -25,8 +28,8 @@ Tests run individually with bun and require environment variables. See the [Test
 
 1. Fork the repo and create a feature branch
 2. Make your changes and add tests for new functionality
-3. Ensure the build passes: `npm run build`
-4. Run `npm run format` before committing
+3. Ensure the build passes: `pnpm build`
+4. Run `pnpm format:check` before committing
 5. Submit a pull request with a clear description
 
 ### Commit messages

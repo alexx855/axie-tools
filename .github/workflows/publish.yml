@@ -16,7 +16,6 @@ on:
 
 permissions:
   contents: write
-  packages: write
   id-token: write
 
 jobs:
@@ -38,7 +37,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           registry-url: "https://registry.npmjs.org/"
           cache: "pnpm"
 
@@ -73,17 +72,10 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Publish to npm with provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish to npm
         run: |
           set -euo pipefail
-          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
-            echo "NPM_TOKEN secret is not set. Please add it in repository settings > Secrets and variables > Actions." >&2
-            exit 1
-          fi
-          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
-          pnpm publish --no-git-checks --access public --tag "${{ github.event.inputs.npm_tag }}" --provenance
+          npm publish --access public --tag "${{ github.event.inputs.npm_tag }}"
 
       - name: Create and push Git tag
         run: |

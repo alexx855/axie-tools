@@ -1,4 +1,4 @@
-import { utils, Wallet, formatEther } from "ethers";
+import { isAddress, Wallet, formatEther } from "ethers";
 import {
   getAxieIdsFromAccount,
   batchTransferAxies,
@@ -37,7 +37,7 @@ async function batchTransfer() {
   }
 
   const toAddress = args[0].replace("ronin:", "0x");
-  if (!utils.isAddress(toAddress)) {
+  if (!isAddress(toAddress)) {
     throw new Error("Invalid recipient address");
   }
 

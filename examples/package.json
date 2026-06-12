@@ -16,7 +16,7 @@
     "ws": "8.20.1"
   },
   "dependencies": {
-    "axie-tools": "^1.7.0",
+    "axie-tools": "^1.7.7",
     "dotenv": "^16.3.1",
     "ethers": "^6.13.4"
   }

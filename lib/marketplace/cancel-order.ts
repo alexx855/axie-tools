@@ -1,17 +1,27 @@
-import { AbiCoder, Interface, Signer, parseUnits } from "ethers";
-import { apiRequest, getMarketplaceApi } from "../utils";
+import { AbiCoder, Interface, Signer } from "ethers";
+import {
+  apiRequest,
+  getMarketplaceApi,
+  getGasPrice,
+  type GasPriceOptions,
+} from "../utils";
 import { getMarketplaceContract } from "../contracts";
 
 // We need to access the APP_AXIE_ORDER_EXCHANGE ABI directly since it's not wrapped in contracts.ts yet
 import APP_AXIE_ORDER_EXCHANGE from "@roninbuilders/contracts/app_axie_order_exchange";
 
+export interface CancelMarketplaceOrderOptions extends GasPriceOptions {
+  /** Pre-fetched order data. If not provided, will be fetched from the API */
+  order?: any;
+}
+
 export default async function cancelMarketplaceOrder(
   axieId: number,
   signer: Signer,
   skyMavisApiKey: string,
-  order?: any, // Add optional order parameter
+  options?: CancelMarketplaceOrderOptions,
 ) {
-  let orderToCancel = order;
+  let orderToCancel = options?.order;
 
   if (!orderToCancel) {
     const query = `
@@ -126,12 +136,14 @@ export default async function cancelMarketplaceOrder(
 
   const marketGatewayContract = getMarketplaceContract(signer);
 
+  const gasPrice = await getGasPrice(signer, options);
+
   console.time("Transaction Send and Wait");
   const tx = await marketGatewayContract.interactWith(
     "ORDER_EXCHANGE",
     orderExchangePayload,
     {
-      gasPrice: parseUnits("26", "gwei"),
+      gasPrice,
     },
   );
 

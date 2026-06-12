@@ -21,6 +21,8 @@ import {
   askToContinue,
   ensureMarketplaceToken,
   getAccountInfo,
+  getGasPrice,
+  type GasPriceOptions,
 } from "./lib/utils";
 import { getAxieFloorPrice } from "./lib/axie";
 import { getMaterialFloorPrice, validateMaterialToken } from "./lib/material";
@@ -28,13 +30,17 @@ import {
   getConsumableFloorPrice,
   validateConsumableToken,
 } from "./lib/consumable";
-import cancelMarketplaceOrder from "./lib/marketplace/cancel-order";
+import cancelMarketplaceOrder, {
+  type CancelMarketplaceOrderOptions,
+} from "./lib/marketplace/cancel-order";
 import cancelMaterialOrder from "./lib/marketplace/cancel-material-order";
 import cancelConsumableOrder from "./lib/marketplace/cancel-consumable-order";
 import createMarketplaceOrder from "./lib/marketplace/create-order";
 import { createMaterialMarketplaceOrder } from "./lib/marketplace/create-material-order";
 import { createConsumableMarketplaceOrder } from "./lib/marketplace/create-consumable-order";
-import buyMarketplaceOrder from "./lib/marketplace/settle-order";
+import buyMarketplaceOrder, {
+  type BuyMarketplaceOrderOptions,
+} from "./lib/marketplace/settle-order";
 import { buyMaterialOrder } from "./lib/marketplace/settle-material-order";
 import { buyConsumableOrder } from "./lib/marketplace/settle-consumable-order";
 
@@ -70,4 +76,8 @@ export {
   getAccountInfo,
   validateMaterialToken,
   validateConsumableToken,
+  getGasPrice,
+  type GasPriceOptions,
+  type BuyMarketplaceOrderOptions,
+  type CancelMarketplaceOrderOptions,
 };

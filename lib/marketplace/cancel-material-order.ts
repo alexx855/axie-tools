@@ -1,5 +1,10 @@
-import { Signer, parseUnits } from "ethers";
-import { apiRequest, getMarketplaceApi } from "../utils";
+import { Signer } from "ethers";
+import {
+  apiRequest,
+  getMarketplaceApi,
+  getGasPrice,
+  type GasPriceOptions,
+} from "../utils";
 import {
   getMarketplaceContract,
   getERC1155ExchangeContract,
@@ -12,6 +17,7 @@ export default async function cancelMaterialOrder(
   materialId: string,
   signer: Signer,
   skyMavisApiKey: string,
+  options?: GasPriceOptions,
 ): Promise<ICancellationResult> {
   const userAddress = await signer.getAddress();
 
@@ -65,11 +71,13 @@ export default async function cancelMaterialOrder(
           encodedOrderData,
         ]);
 
+      const gasPrice = await getGasPrice(signer, options);
+
       const tx = await marketGatewayContract.interactWith(
         "ERC1155_EXCHANGE",
         cancelOrderPayload,
         {
-          gasPrice: parseUnits("26", "gwei"),
+          gasPrice,
           gasLimit: 110000,
         },
       );

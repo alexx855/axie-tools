@@ -1,19 +1,25 @@
-import { Interface, Signer, TransactionReceipt, parseUnits } from "ethers";
+import { Interface, Signer, TransactionReceipt } from "ethers";
 import { getMarketplaceContract, getWETHContract } from "../contracts";
 import type { IOrder } from "../marketplace";
 import { getAxieDetails, encodeAxieOrderData } from "../axie";
+import { getGasPrice, type GasPriceOptions } from "../utils";
 
 import APP_AXIE_ORDER_EXCHANGE from "@roninbuilders/contracts/app_axie_order_exchange";
+
+export interface BuyMarketplaceOrderOptions extends GasPriceOptions {
+  /** Pre-fetched order data. If not provided, will be fetched from the API */
+  existingOrder?: IOrder;
+}
 
 export default async function buyMarketplaceOrder(
   axieId: number,
   signer: Signer,
   accessToken: string,
   skyMavisApiKey: string,
-  existingOrder?: IOrder,
+  options?: BuyMarketplaceOrderOptions,
 ): Promise<TransactionReceipt | false> {
   try {
-    let order: IOrder | null | undefined = existingOrder;
+    let order: IOrder | null | undefined = options?.existingOrder;
 
     if (!order) {
       order = await getAxieDetails(axieId, accessToken, skyMavisApiKey);
@@ -61,12 +67,14 @@ export default async function buyMarketplaceOrder(
       [settleInfo, BigInt(order.currentPrice)],
     );
 
-    // Call the contract with higher gas price for faster confirmation
+    const gasPrice = await getGasPrice(signer, options);
+
+    // Call the contract with a dynamically determined gas price
     const txBuyAxie = await contract.interactWith(
       "ORDER_EXCHANGE",
       orderExchangeData,
       {
-        gasPrice: parseUnits("50", "gwei"),
+        gasPrice,
         gasLimit: 1000000,
       },
     );

@@ -119,6 +119,7 @@ for (const axieId of axieIds) {
 | `getAccountInfo(address, provider, apiKey)` | Wallet balances, allowances, and approval status |
 | `validateMaterialToken(materialId, apiKey)` | Check if a material token ID exists |
 | `getTokenExpirationInfo(token)` | Check when an access token expires |
+| `getGasPrice(signerOrProvider, options?)` | Current network gas price or a supplied override |
 
 ### Trading
 
@@ -147,6 +148,30 @@ for (const axieId of axieIds) {
 | `approveMarketplaceContract(wallet)` | Approve marketplace to handle your Axies |
 | `approveMaterialMarketplace(wallet)` | Approve marketplace to handle your materials |
 | `approveBatchTransfer(wallet)` | Approve batch transfer contract |
+
+### Gas price options
+
+Transaction helpers accept an optional `GasPriceOptions` parameter to customize gas pricing:
+
+```typescript
+import { parseUnits } from "ethers";
+import { transferAxie, buyMarketplaceOrder } from "axie-tools";
+
+// Use dynamic gas price from the network.
+await transferAxie(signer, recipientAddress, axieId);
+
+// Or pass a custom gas price.
+const customGasPrice = parseUnits("30", "gwei");
+await transferAxie(signer, recipientAddress, axieId, {
+  gasPrice: customGasPrice,
+});
+
+await buyMarketplaceOrder(axieId, wallet, token, apiKey, {
+  gasPrice: customGasPrice,
+});
+```
+
+By default, transaction helpers fetch the current gas price from the network. If fetching fails, helpers fall back to 26 gwei.
 
 ### Contracts
 

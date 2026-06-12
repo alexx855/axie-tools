@@ -36,12 +36,15 @@ Set up your credentials in a `.env` file:
 PRIVATE_KEY="your_ronin_wallet_private_key"
 MARKETPLACE_ACCESS_TOKEN="your_access_token"
 SKYMAVIS_API_KEY="your_api_key"
+# Optional: override the default Ronin public RPC
+RONIN_RPC_URL="https://api.roninchain.com/rpc"
 ```
 
 You need:
 - A Ronin wallet private key
 - A marketplace access token from [app.axieinfinity.com](#getting-your-access-token)
-- A SkyMavis API key from the [Developer Console](https://developers.roninchain.com/console/applications)
+- A SkyMavis API key from the [Developer Console](https://developers.roninchain.com/console/applications) for marketplace API calls
+- Optional: a custom Ronin RPC URL if you do not want to use the default public endpoint (`https://api.roninchain.com/rpc`)
 
 ### Check floor price and buy an Axie
 
@@ -139,7 +142,7 @@ for (const axieId of axieIds) {
 
 | Function | Description |
 | --- | --- |
-| `createProvider(apiKey)` | Connect to Ronin network |
+| `createProvider(apiKey, rpcUrl?)` | Connect to Ronin network using `RONIN_RPC_URL`, `rpcUrl`, or the default public RPC |
 | `approveWETH(wallet)` | Approve WETH spending for the marketplace |
 | `approveMarketplaceContract(wallet)` | Approve marketplace to handle your Axies |
 | `approveMaterialMarketplace(wallet)` | Approve marketplace to handle your materials |
@@ -227,6 +230,7 @@ Log into [app.axieinfinity.com](https://app.axieinfinity.com/), open dev tools, 
 | "Marketplace contract not approved" | Run `approveMarketplaceContract(wallet)` or `approveMaterialMarketplace(wallet)`. |
 | Transactions failing | Not enough RON for gas. Top up your wallet. |
 | API connection problems | Check your `SKYMAVIS_API_KEY` at the [developer console](https://developers.roninchain.com/console/applications). |
+| RPC connection problems | Set `RONIN_RPC_URL` to another Ronin-compatible provider such as dRPC, Alchemy, Chainstack, or Moralis. |
 | "Material token not found" | Invalid material ID. Use `validateMaterialToken()` to verify. |
 
 ## Important notes
@@ -235,7 +239,7 @@ Log into [app.axieinfinity.com](https://app.axieinfinity.com/), open dev tools, 
 - All trading uses **WETH**, not ETH. Ensure your wallet has enough WETH before buying.
 - Listing items is off-chain but requires contract approvals first. Buying and canceling are on-chain transactions.
 - `MARKETPLACE_ACCESS_TOKEN` expires periodically. For long-running bots, use `refreshToken()` and `getTokenExpirationInfo()` to keep it fresh.
-- SkyMavis API has rate limits. Use reasonable poll intervals (30s+) in bot loops.
+- Marketplace API and public RPC providers have rate limits. Use reasonable poll intervals (30s+) in bot loops.
 
 ## Testing
 

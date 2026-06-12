@@ -24,6 +24,7 @@ npm install
 | `PRIVATE_KEY` | All example scripts |
 | `MARKETPLACE_ACCESS_TOKEN` | `floor-sniper.js`, `auto-lister.js`, `settle-order.js`, `create-order.js`, `create-order-auction.js`, `material-order.js` |
 | `SKYMAVIS_API_KEY` | All example scripts |
+| `RONIN_RPC_URL` | Optional custom Ronin RPC provider; defaults to `https://api.roninchain.com/rpc` |
 
 ## Script catalog
 

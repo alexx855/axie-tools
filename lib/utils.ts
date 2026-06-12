@@ -9,10 +9,13 @@ import {
 import { getAxieIdsFromAccount } from "./axie";
 import { getUserMaterials } from "./material";
 
-export function createProvider(skyMavisApiKey: string): JsonRpcProvider {
-  return new JsonRpcProvider(
-    `https://api-gateway.skymavis.com/rpc?apikey=${skyMavisApiKey}`,
-  );
+const DEFAULT_RONIN_RPC_URL = "https://api.roninchain.com/rpc";
+
+export function createProvider(
+  _skyMavisApiKey: string,
+  rpcUrl = process.env.RONIN_RPC_URL ?? DEFAULT_RONIN_RPC_URL,
+): JsonRpcProvider {
+  return new JsonRpcProvider(rpcUrl);
 }
 
 export function getMarketplaceApi(skyMavisApiKey: string) {

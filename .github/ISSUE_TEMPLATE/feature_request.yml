@@ -1,0 +1,39 @@
+name: Feature request
+description: Suggest an improvement or new capability.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: What are you trying to automate or inspect?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the API, CLI flow, or example you would like.
+    validations:
+      required: true
+  - type: dropdown
+    id: operation-risk
+    attributes:
+      label: Operation type
+      options:
+        - Read-only query
+        - Approval
+        - Buy order
+        - Create listing
+        - Cancel listing
+        - Transfer
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Mention any workaround or existing helper you tried.

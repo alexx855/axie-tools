@@ -29,11 +29,11 @@ async function sale() {
     throw new Error("Please provide a valid axieID as the first argument");
   }
 
-  // Get price from command line args (in ETH)
+  // Get price from command line args (in WETH)
   const price = args[1];
   if (!price || isNaN(price)) {
     throw new Error(
-      "Please provide a valid price in ETH as the second argument",
+      "Please provide a valid price in WETH as the second argument",
     );
   }
 

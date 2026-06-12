@@ -1,8 +1,8 @@
 import { AbiCoder, Signer, TransactionReceipt } from "ethers";
 import {
   apiRequest,
-  getMarketplaceApi,
   getGasPrice,
+  getMarketplaceApi,
   type GasPriceOptions,
 } from "../utils";
 import {
@@ -10,25 +10,17 @@ import {
   getWETHContract,
   getERC1155ExchangeContract,
 } from "../contracts";
-import { MATERIAL_QUERIES } from "../material";
+import { CONSUMABLE_QUERIES } from "../consumable";
 
-export async function buyMaterialOrder(
-  materialId: string,
+export async function buyConsumableOrder(
+  consumableId: string,
   quantity: number,
   signer: Signer,
   accessToken: string,
   skyMavisApiKey: string,
   options?: GasPriceOptions,
 ): Promise<TransactionReceipt | false> {
-  const query = MATERIAL_QUERIES.GET_MATERIAL_ORDERS;
-
-  const variables = {
-    tokenType: "Material",
-    tokenId: materialId,
-    from: 0,
-    size: 50,
-    sort: "PriceAsc",
-  };
+  const query = CONSUMABLE_QUERIES.GET_CONSUMABLE_ORDERS;
 
   const { graphqlUrl, headers: apiHeaders } = getMarketplaceApi(skyMavisApiKey);
   const headers: Record<string, string> = {
@@ -37,63 +29,72 @@ export async function buyMaterialOrder(
   };
 
   try {
-    const results = await apiRequest<any>(
-      graphqlUrl,
-      JSON.stringify({
-        operationName: "GetBuyNowErc1155Orders",
-        query,
-        variables,
-      }),
-      headers,
-    );
-
-    const orders = results.data?.erc1155Token?.orders?.data || [];
-    if (!orders || orders.length === 0) {
-      return false;
-    }
-
     // Get address first for self-order filtering
     const address = await signer.getAddress();
-
-    // Find valid orders (not expired, has available quantity, and not from same address)
-    const validOrders = orders.filter((order: any) => {
-      const isExpired = order.expiredAt * 1000 <= Date.now();
-      const hasQuantity =
-        order.assets?.[0]?.availableQuantity &&
-        parseInt(order.assets[0].availableQuantity) > 0;
-      const isSelfOrder = order.maker.toLowerCase() === address.toLowerCase();
-
-      return !isExpired && hasQuantity && !isSelfOrder;
-    });
-
-    if (validOrders.length === 0) {
-      return false;
-    }
-
-    // Sort by price (ascending) for best price first, but skip the very cheapest
-    // which might be stale or have validation issues
-    const sortedValidOrders = validOrders.sort((a: any, b: any) => {
-      const priceA = parseFloat(a.currentPrice);
-      const priceB = parseFloat(b.currentPrice);
-      return priceA - priceB;
-    });
-
-    // Skip the first few cheapest orders as they might be stale or have issues
-    const ordersToTry = sortedValidOrders.slice(3); // Skip 3 cheapest orders
-
-    // Find the first order with sufficient quantity
+    const pageSize = 50;
+    let from = 0;
+    let totalOrders = Number.POSITIVE_INFINITY;
     let order: any = null;
-    for (const candidateOrder of ordersToTry) {
-      const availableQuantity = parseInt(
-        candidateOrder.assets[0].availableQuantity,
+
+    while (from < totalOrders) {
+      const results = await apiRequest<any>(
+        graphqlUrl,
+        JSON.stringify({
+          operationName: "GetBuyNowErc1155Orders",
+          query,
+          variables: {
+            tokenType: "Consumable",
+            tokenId: consumableId,
+            from,
+            size: pageSize,
+            sort: "PriceAsc",
+          },
+        }),
+        headers,
       );
 
-      if (quantity <= availableQuantity) {
-        order = candidateOrder;
+      const orders = results.data?.erc1155Token?.orders?.data || [];
+      totalOrders =
+        results.data?.erc1155Token?.orders?.total ?? from + orders.length;
+      if (!orders || orders.length === 0) {
         break;
       }
-    }
 
+      // Find valid orders (not expired, has available quantity, and not from same address)
+      const validOrders = orders.filter((order: any) => {
+        const isExpired = order.expiredAt * 1000 <= Date.now();
+        const hasQuantity =
+          order.assets?.[0]?.availableQuantity &&
+          parseInt(order.assets[0].availableQuantity) > 0;
+        const isSelfOrder = order.maker.toLowerCase() === address.toLowerCase();
+
+        return !isExpired && hasQuantity && !isSelfOrder;
+      });
+
+      // Sort by price (ascending) for best price first.
+      const sortedValidOrders = validOrders.sort((a: any, b: any) => {
+        const priceA = parseFloat(a.currentPrice);
+        const priceB = parseFloat(b.currentPrice);
+        return priceA - priceB;
+      });
+
+      // Find the first order with sufficient quantity
+      for (const candidateOrder of sortedValidOrders) {
+        const availableQuantity = parseInt(
+          candidateOrder.assets[0].availableQuantity,
+        );
+
+        if (quantity <= availableQuantity) {
+          order = candidateOrder;
+          break;
+        }
+      }
+
+      if (order || orders.length < pageSize) {
+        break;
+      }
+      from += orders.length;
+    }
     if (!order) {
       return false;
     }
@@ -107,8 +108,8 @@ export async function buyMaterialOrder(
       return false;
     }
 
-    // Check WETH allowance for ERC1155_EXCHANGE contract
-    const erc1155ExchangeAddress = "0xb36c9027ed4353fdd7a59d8c40e0df5221a3764f";
+    const erc1155ExchangeContract = getERC1155ExchangeContract();
+    const erc1155ExchangeAddress = await erc1155ExchangeContract.getAddress();
     const allowance = await wethContract.allowance(
       address,
       erc1155ExchangeAddress,
@@ -174,6 +175,7 @@ export async function buyMaterialOrder(
 
     try {
       const ERC1155_EXCHANGE_CONTRACT = getERC1155ExchangeContract();
+      const marketplaceContract = getMarketplaceContract(signer);
 
       const settleInfoTuple = [
         settleInfo.orderData,
@@ -193,8 +195,6 @@ export async function buyMaterialOrder(
           BigInt(quantity),
           totalSettlePrice,
         ]);
-
-      const marketplaceContract = getMarketplaceContract(signer);
 
       // Estimate gas for gateway call
       const gatewayGasEstimate =

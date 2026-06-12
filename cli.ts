@@ -12,16 +12,23 @@ import {
   createProvider,
   validateMaterialToken,
   getMaterialFloorPrice,
+  validateConsumableToken,
+  getConsumableFloorPrice,
   getAxieFloorPrice,
   approveMarketplaceContract,
   approveMaterialMarketplace,
+  approveConsumableMarketplace,
   approveWETH,
   buyMarketplaceOrder,
   buyMaterialOrder,
+  buyConsumableOrder,
   cancelMarketplaceOrder,
   cancelMaterialOrder,
+  cancelConsumableOrder,
   createMarketplaceOrder,
   createMaterialMarketplaceOrder,
+  getTokenExpirationInfo,
+  createConsumableMarketplaceOrder,
 } from "./index";
 import "dotenv/config";
 
@@ -79,6 +86,46 @@ const getMaterialId = async (skyMavisApiKey: string) => {
   return response.materialId;
 };
 
+const getConsumableId = async (skyMavisApiKey: string) => {
+  const response = await prompts({
+    type: "text",
+    name: "consumableId",
+    message: "🆔 Enter Consumable ID:",
+    validate: (value: string) => value !== undefined && value.length > 0,
+  });
+  if (response.consumableId === undefined) {
+    console.log("❌ Invalid Consumable ID!");
+    return null;
+  }
+
+  console.log("🔍 Validating consumable token...");
+  const consumableInfo = await validateConsumableToken(
+    response.consumableId,
+    skyMavisApiKey,
+  );
+
+  if (!consumableInfo) {
+    console.log("❌ Consumable ID not found or invalid!");
+    return null;
+  }
+
+  console.log(`✅ Found consumable: ${consumableInfo.name}`);
+  console.log(`📄 Description: ${consumableInfo.description}`);
+  console.log(`📦 Total Supply: ${consumableInfo.totalSupply}`);
+  console.log(`👥 Total Owners: ${consumableInfo.totalOwners}`);
+  if (consumableInfo.minPrice) {
+    console.log(
+      `💰 Min Price: ${(Number(consumableInfo.minPrice) / 1e18).toFixed(6)} WETH`,
+    );
+  }
+  if (consumableInfo.orders) {
+    console.log(`🛒 Listed Quantity: ${consumableInfo.orders.totalListed}`);
+    console.log(`📋 Total Orders: ${consumableInfo.orders.totalOrders}`);
+  }
+
+  return response.consumableId;
+};
+
 const getQuantity = async (optional = false) => {
   const message = optional
     ? "📦 Enter Quantity (leave empty to use all available):"
@@ -105,16 +152,15 @@ const getPrice = async (
   skyMavisApiKey?: string,
   quantity?: number,
   isAxie = false,
-  customMessage?: string,
+  consumableIdOrMessage?: string,
 ) => {
-  let message: string;
-  if (customMessage) {
-    message = customMessage;
-  } else {
-    message = optional
+  const customMessage = isAxie ? consumableIdOrMessage : undefined;
+  const consumableId = !isAxie ? consumableIdOrMessage : undefined;
+  const message = customMessage
+    ? customMessage
+    : optional
       ? "💰 Enter Price (in WETH, leave empty to use floor price):"
       : "💰 Enter Price (in WETH):";
-  }
 
   const response = await prompts({
     type: "text",
@@ -138,6 +184,12 @@ const getPrice = async (
     } else if (materialId) {
       floorPrice = await getMaterialFloorPrice(
         materialId,
+        skyMavisApiKey,
+        quantity,
+      );
+    } else if (consumableId) {
+      floorPrice = await getConsumableFloorPrice(
+        consumableId,
         skyMavisApiKey,
         quantity,
       );
@@ -218,15 +270,27 @@ async function main() {
             title: "Approve Material marketplace",
             value: "approve-material-marketplace",
           },
+          {
+            title: "Approve Consumable marketplace",
+            value: "approve-consumable-marketplace",
+          },
           { title: "Settle axie order (buy axie)", value: "settle" },
           {
             title: "Settle material order (buy material)",
             value: "settle-material",
           },
+          {
+            title: "Settle consumable order (buy consumable)",
+            value: "settle-consumable",
+          },
           { title: "Cancel axie order (delist axie)", value: "cancel" },
           {
             title: "Cancel material order (delist materials)",
             value: "cancel-material",
+          },
+          {
+            title: "Cancel consumable order (delist consumables)",
+            value: "cancel-consumable",
           },
           {
             title: "Cancel all axie orders (delist all axies)",
@@ -236,6 +300,10 @@ async function main() {
           {
             title: "Create material order (list material)",
             value: "create-material",
+          },
+          {
+            title: "Create consumable order (list consumable)",
+            value: "create-consumable",
           },
           {
             title: "Create axie auction (list axie for auction)",
@@ -251,6 +319,7 @@ async function main() {
           },
           { title: "Transfer axie", value: "transfer" },
           { title: "Transfer all axies", value: "transfer-all" },
+          { title: "List all axies (comma-separated)", value: "list-all" },
         ],
       });
       const action = response.action;
@@ -277,6 +346,17 @@ async function main() {
             "🔐 Marketplace approval for Materials:",
             info.isMaterialApprovedForAll ? "✅ Approved" : "❌ Not approved",
           );
+
+          const token = process.env.MARKETPLACE_ACCESS_TOKEN;
+          if (token) {
+            const expInfo = getTokenExpirationInfo(token);
+            console.log(
+              "🎫 Access token:",
+              expInfo.isExpired ? "❌" : "✅",
+              expInfo.humanReadable,
+            );
+          }
+
           console.log(`🐾 Number of Axies: ${info.axieIds.length}`);
           if (info.axieIds.length > 0) {
             console.log(`🆔 Axie IDs: ${info.axieIds.join(", ")}`);
@@ -310,8 +390,12 @@ async function main() {
           }
 
           const result = await refreshToken(refreshTokenValue);
-          console.log("New access token:", result.newAccessToken);
-          console.log("New refresh token:", result.newRefreshToken);
+          console.log("✅ Token refreshed!");
+          console.log(
+            "🎫 Access token:",
+            result.expirationInfo.isExpired ? "❌" : "✅",
+            result.expirationInfo.humanReadable,
+          );
 
           process.env.MARKETPLACE_ACCESS_TOKEN = result.newAccessToken;
           process.env.MARKETPLACE_REFRESH_TOKEN = result.newRefreshToken;
@@ -328,6 +412,10 @@ async function main() {
         }
         case "approve-material-marketplace": {
           await approveMaterialMarketplace(wallet);
+          break;
+        }
+        case "approve-consumable-marketplace": {
+          await approveConsumableMarketplace(wallet);
           break;
         }
         case "settle": {
@@ -359,6 +447,29 @@ async function main() {
           await approveWETH(wallet);
           const receipt = await buyMaterialOrder(
             materialId,
+            quantity,
+            wallet,
+            token,
+            skyMavisApiKey,
+          );
+          if (receipt) {
+            console.log("🚀 Transaction successful! Hash:", receipt.hash);
+            console.log(
+              "🔗 View transaction: https://app.roninchain.com/tx/" +
+                receipt.hash,
+            );
+          }
+          break;
+        }
+        case "settle-consumable": {
+          const token = await ensureMarketplaceToken();
+          const consumableId = await getConsumableId(skyMavisApiKey);
+          if (!consumableId) break;
+          const quantity = await getQuantity();
+          if (!quantity) break;
+          await approveWETH(wallet);
+          const receipt = await buyConsumableOrder(
+            consumableId,
             quantity,
             wallet,
             token,
@@ -471,6 +582,57 @@ async function main() {
           );
           break;
         }
+        case "create-consumable": {
+          const consumableId = await getConsumableId(skyMavisApiKey);
+          if (!consumableId) break;
+          const quantity = await getQuantity(true); // Optional quantity
+          const price = await getPrice(
+            true,
+            undefined,
+            skyMavisApiKey,
+            quantity,
+            false,
+            consumableId,
+          ); // Optional price with floor price fallback
+          if (!price) break;
+
+          const token = await ensureMarketplaceToken();
+          await approveConsumableMarketplace(wallet);
+
+          const currentBlock = await provider.getBlock("latest");
+          const startedAt = currentBlock!.timestamp;
+          const expiredAt = startedAt + 15634800; // ~6 months
+
+          const orderData = {
+            address,
+            consumableId: consumableId.toString(),
+            quantity: quantity ? quantity.toString() : undefined,
+            unitPrice: parseEther(price).toString(),
+            endedUnitPrice: "0",
+            startedAt,
+            endedAt: 0,
+            expiredAt,
+          };
+
+          const result = await createConsumableMarketplaceOrder(
+            orderData,
+            token,
+            wallet,
+            skyMavisApiKey,
+          );
+          if (result === null || result.errors || !result.data) {
+            console.error(
+              "❌ Error:",
+              result?.errors?.[0]?.message || "Unknown error",
+            );
+            break;
+          }
+
+          console.log(
+            `✅ Created consumable order for Consumable ${consumableId}${quantity ? ` (qty: ${quantity})` : " (all available)"}! Current price in USD: ${result.data.createOrder.currentPriceUsd}`,
+          );
+          break;
+        }
         case "create-auction": {
           const axieId = await getAxieId();
           if (!axieId) break;
@@ -543,8 +705,8 @@ async function main() {
           }
 
           console.log(`✅ Created auction for Axie ${axieId}!`);
-          console.log(`Start price: ${startPrice} ETH`);
-          console.log(`End price: ${endPrice} ETH`);
+          console.log(`Start price: ${startPrice} WETH`);
+          console.log(`End price: ${endPrice} WETH`);
           console.log(`Duration: ${durationHours} hours`);
           console.log(
             `Current price in USD: ${result.data.createOrder.currentPriceUsd}`,
@@ -753,6 +915,32 @@ async function main() {
           }
           break;
         }
+        case "cancel-consumable": {
+          const consumableId = await getConsumableId(skyMavisApiKey);
+          if (!consumableId) break;
+
+          const result = await cancelConsumableOrder(
+            consumableId,
+            wallet,
+            skyMavisApiKey,
+          );
+          if (result && "canceled" in result && result.canceled > 0) {
+            console.log(
+              `✅ Successfully cancelled ${result.canceled} consumable order(s)!`,
+            );
+            if (result.canceledOrders.length > 0) {
+              result.canceledOrders.forEach((order) => {
+                console.log(
+                  "🔗 View transaction: https://app.roninchain.com/tx/" +
+                    order.transactionHash,
+                );
+              });
+            }
+          } else if (result && "message" in result) {
+            console.log("❌", result.message);
+          }
+          break;
+        }
         case "cancel-all": {
           const fromAddress = await wallet.getAddress();
           let axieIds = await getAxieIdsFromAccount(fromAddress, provider);
@@ -856,6 +1044,59 @@ async function main() {
               "🔗 View transaction: https://app.roninchain.com/tx/" +
                 receipt.hash,
             );
+          }
+          break;
+        }
+        case "list-all": {
+          const addressResponse = await prompts({
+            type: "text",
+            name: "queryAddress",
+            message:
+              "Enter address to export axies from (leave empty for your own):",
+            validate: (value: string) => !value || value.startsWith("0x"),
+          });
+
+          const queryAddress = addressResponse.queryAddress || address;
+          console.log(`🔍 Fetching all axies for ${queryAddress}...`);
+          const axieIds = await getAxieIdsFromAccount(queryAddress, provider);
+
+          if (axieIds.length === 0) {
+            console.log("❌ No Axies found");
+            break;
+          }
+
+          const csvResponse = await prompts({
+            type: "select",
+            name: "format",
+            message: "How would you like to export?",
+            choices: [
+              { title: "Print to screen", value: "screen" },
+              { title: "Save as CSV file", value: "csv" },
+            ],
+          });
+
+          const commaSeparated = axieIds.join(",");
+
+          if (csvResponse.format === "screen") {
+            console.log(`\n📋 Axies (${axieIds.length} total):`);
+            console.log(commaSeparated);
+          } else if (csvResponse.format === "csv") {
+            const filenameResponse = await prompts({
+              type: "text",
+              name: "filename",
+              message: "Enter filename (without .csv extension):",
+              validate: (value: string) => value.length > 0,
+            });
+
+            if (!filenameResponse.filename) {
+              console.log("❌ Filename is required");
+              break;
+            }
+
+            const fs = await import("fs/promises");
+            const filename = `${filenameResponse.filename}.csv`;
+            await fs.writeFile(filename, commaSeparated);
+            console.log(`✅ Saved ${axieIds.length} axie IDs to ${filename}`);
           }
           break;
         }

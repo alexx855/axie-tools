@@ -1,22 +1,19 @@
-# Axie tools
+# Axie Tools
 
 ```typescript
-  import { buyMarketplaceOrder, approveWETH } from "axie-tools";
-  console.log(`🛒 Approving WETH for marketplace...`);
-  await approveWETH(wallet);
+import { buyMarketplaceOrder, approveWETH, createProvider } from "axie-tools";
+import { Wallet } from "ethers";
 
-  console.log(`🛒 Buying Axie ${axieId}...`);
-  const receipt = await buyMarketplaceOrder(
-    axieId,
-    wallet,
-    process.env.MARKETPLACE_ACCESS_TOKEN,
-    process.env.SKYMAVIS_API_KEY,
-  );
-  if (receipt) {
-    console.log(
-      "🔗 View transaction: https://app.roninchain.com/tx/" + receipt.hash,
-    );
-  }
+const provider = createProvider(process.env.SKYMAVIS_API_KEY);
+const wallet = new Wallet(process.env.PRIVATE_KEY, provider);
+
+await approveWETH(wallet);
+const receipt = await buyMarketplaceOrder(
+  12345, // Axie ID
+  wallet,
+  process.env.MARKETPLACE_ACCESS_TOKEN,
+  process.env.SKYMAVIS_API_KEY,
+);
 ```
 
 [![npm version](https://img.shields.io/npm/v/axie-tools.svg?label=npm%20version)](https://www.npmjs.com/package/axie-tools)
@@ -25,271 +22,275 @@
 ![node version](https://img.shields.io/badge/node-%3E%3D22-brightgreen)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Trade Axie Infinity NFTs and materials directly from your terminal, scripts or bots. This TypeScript library and CLI makes it easy to buy, sell, and manage your Axies and Materials on Ronin Network. Works with both individual items and bulk operations, so you can manage your entire collection without opening a browser.
+TypeScript SDK for building Axie Infinity trading bots and AI agents on Ronin network. Automate marketplace operations: buy, sell, list, and transfer Axies and Materials programmatically. Built-in floor price detection, batch transfers, and token management. Includes an interactive CLI for manual use.
 
-## What it does
+## Quick start
 
-Buy, sell, and auction your Axies and materials. The tool handles both individual transactions and bulk operations when you want to list your entire collection.
-
-Transfer multiple Axies at once instead of doing them one by one. Set up marketplace approvals without dealing with the web interface. Get your wallet info and manage everything through simple commands.
-
-The interactive CLI walks you through each step, or you can use the TypeScript library if you want to build your own scripts.
-
-## What you need
-
-You'll need a few things set up first:
-
-- Node.js 22 or newer ([download here](https://nodejs.org/en/download/prebuilt-binaries/))
-- Your Ronin wallet private key
-- An Axie Infinity marketplace account for the access token ([see how to get it](#getting-your-access-token))
-- A SkyMavis API key from the [Ronin Developer Console](https://developers.roninchain.com/console/applications)
-
-## Try it right now
-
-Just run this and you'll get an interactive menu:
-
-```shell
-npx axie-tools
-```
-
-The menu gives you options like:
-
-- Check your account info
-- Refresh your access token
-- Approve WETH spending
-- Approve the marketplace contracts
-- Buy an Axie or materials
-- List your stuff for sale
-- Cancel your listings
-- Set up auctions
-- Transfer Axies around
-
-Pick what you want to do and the tool walks you through it.
-
-> [!TIP]
-> You can create an `.env` file from `.env.example` to avoid entering values every time you use the CLI.
-
-## Using it in your own code
-
-Install it in your project:
-
-```shell
+```bash
 npm install axie-tools ethers dotenv
 ```
 
-Make a .env file with your credentials:
+Set up your credentials in a `.env` file:
 
-```shell
-# Your wallet private key (Ronin wallet > Manage wallet > Show private key)
-PRIVATE_KEY="your_private_key_here"
-# Marketplace token (log into app.axieinfinity.com, open dev tools > Application > Local storage > accessToken)
-MARKETPLACE_ACCESS_TOKEN="your_access_token_here"
-# API key from https://developers.roninchain.com/console/applications/
-SKYMAVIS_API_KEY="your_api_key_here"
+```bash
+PRIVATE_KEY="your_ronin_wallet_private_key"
+MARKETPLACE_ACCESS_TOKEN="your_access_token"
+SKYMAVIS_API_KEY="your_api_key"
+# Optional: override the default Ronin public RPC
+RONIN_RPC_URL="https://api.roninchain.com/rpc"
 ```
 
-Check out the examples folder for working code:
+You need:
+- A Ronin wallet private key
+- A marketplace access token from [app.axieinfinity.com](#getting-your-access-token)
+- A SkyMavis API key from the [Developer Console](https://developers.roninchain.com/console/applications) for marketplace API calls
+- Optional: a custom Ronin RPC URL if you do not want to use the default public endpoint (`https://api.roninchain.com/rpc`)
 
-- [Buy an Axie](https://github.com/alexx855/axie-tools/tree/main/examples/settle-order.js)
-- [List an Axie for sale](https://github.com/alexx855/axie-tools/tree/main/examples/create-order.js)
-- [Create an auction](https://github.com/alexx855/axie-tools/tree/main/examples/create-order-auction.js)
-- [Cancel a listing](https://github.com/alexx855/axie-tools/tree/main/examples/cancel-order.js)
-- [List materials for sale](https://github.com/alexx855/axie-tools/tree/main/examples/material-order.js)
-- [Transfer all your Axies](https://github.com/alexx855/axie-tools/tree/main/examples/transfer-all.js)
+### Check floor price and buy an Axie
 
-### Functions you can use
+```typescript
+import { getAxieFloorPrice, buyMarketplaceOrder, approveWETH, createProvider } from "axie-tools";
+import { Wallet } from "ethers";
+import "dotenv/config";
 
-**Axie stuff:**
-- `createMarketplaceOrder()` - List an Axie for sale
-- `cancelMarketplaceOrder()` - Remove your listing
-- `buyMarketplaceOrder()` - Buy someone else's Axie
+const provider = createProvider(process.env.SKYMAVIS_API_KEY);
+const wallet = new Wallet(process.env.PRIVATE_KEY, provider);
 
-**Materials:**
-- `createMaterialMarketplaceOrder()` - List materials for sale
-- `cancelMaterialOrder()` - Remove material listing
-- `buyMaterialOrder()` - Buy materials
+// Check the floor price first
+const floorPrice = await getAxieFloorPrice(process.env.SKYMAVIS_API_KEY);
+console.log(`Current floor: ${floorPrice} WETH`);
 
-**Moving things around:**
-- `transferAxie()` - Send one Axie to another wallet
-- `batchTransferAxies()` - Send multiple Axies at once
+// Approve WETH spending (one-time)
+await approveWETH(wallet);
 
-**Approvals (you need these before trading):**
-- `approveWETH()` - Let the marketplace spend your WETH
-- `approveMarketplaceContract()` - Let the marketplace handle your Axies
-- `approveMaterialMarketplace()` - Let the marketplace handle your materials
+// Buy a specific Axie
+const receipt = await buyMarketplaceOrder(
+  12345, // Axie ID to buy
+  wallet,
+  process.env.MARKETPLACE_ACCESS_TOKEN,
+  process.env.SKYMAVIS_API_KEY,
+);
+console.log(`TX: https://app.roninchain.com/tx/${receipt.hash}`);
+```
 
-**Useful helpers:**
-- `getAxieIdsFromAccount()` - See what Axies someone owns
-- `getAccountInfo()` - Get wallet info
-- `getAxieFloorPrice()` - Current floor price for Axies
-- `getMaterialFloorPrice()` - Current floor price for specific materials
-- `createProvider()` - Connect to the Ronin network
-- `getGasPrice()` - Get current gas price from provider
+### List all your Axies for sale
 
-### Gas Price Options
+```typescript
+import { getAxieIdsFromAccount, createMarketplaceOrder, approveMarketplaceContract, createProvider } from "axie-tools";
+import { Wallet, parseEther } from "ethers";
+import "dotenv/config";
 
-All transaction functions support an optional `GasPriceOptions` parameter to customize gas pricing:
+const provider = createProvider(process.env.SKYMAVIS_API_KEY);
+const wallet = new Wallet(process.env.PRIVATE_KEY, provider);
+const address = await wallet.getAddress();
+
+await approveMarketplaceContract(wallet);
+
+const axieIds = await getAxieIdsFromAccount(address, provider);
+const block = await provider.getBlock("latest");
+
+for (const axieId of axieIds) {
+  await createMarketplaceOrder(
+    {
+      address,
+      axieId: axieId.toString(),
+      basePrice: parseEther("0.01").toString(),
+      endedPrice: "0",
+      startedAt: block.timestamp,
+      endedAt: 0,
+      expiredAt: block.timestamp + 15634800,
+    },
+    process.env.MARKETPLACE_ACCESS_TOKEN,
+    wallet,
+    process.env.SKYMAVIS_API_KEY,
+  );
+}
+```
+
+## API reference
+
+### Market data
+
+| Function | Description |
+| --- | --- |
+| `getAxieFloorPrice(apiKey)` | Current floor price for Axies |
+| `getMaterialFloorPrice(materialId, apiKey, quantity?)` | Current floor price for a material |
+| `getAxieIdsFromAccount(address, provider)` | List all Axie IDs owned by an address |
+| `getAccountInfo(address, provider, apiKey)` | Wallet balances, allowances, and approval status |
+| `validateMaterialToken(materialId, apiKey)` | Check if a material token ID exists |
+| `getTokenExpirationInfo(token)` | Check when an access token expires |
+| `getGasPrice(signerOrProvider, options?)` | Current network gas price or a supplied override |
+
+### Trading
+
+| Function | Description |
+| --- | --- |
+| `buyMarketplaceOrder(axieId, wallet, token, apiKey)` | Buy a listed Axie |
+| `createMarketplaceOrder(orderData, token, wallet, apiKey)` | List an Axie for sale or auction |
+| `cancelMarketplaceOrder(axieId, wallet, apiKey)` | Cancel an Axie listing |
+| `buyMaterialOrder(materialId, quantity, wallet, token, apiKey)` | Buy listed materials |
+| `createMaterialMarketplaceOrder(orderData, token, wallet, apiKey)` | List materials for sale |
+| `cancelMaterialOrder(materialId, wallet, apiKey)` | Cancel a material listing |
+
+### Transfers
+
+| Function | Description |
+| --- | --- |
+| `transferAxie(wallet, to, axieId)` | Transfer a single Axie |
+| `batchTransferAxies(wallet, to, axieIds)` | Transfer up to 100 Axies in one transaction |
+
+### Setup (one-time approvals)
+
+| Function | Description |
+| --- | --- |
+| `createProvider(apiKey, rpcUrl?)` | Connect to Ronin network using `RONIN_RPC_URL`, `rpcUrl`, or the default public RPC |
+| `approveWETH(wallet)` | Approve WETH spending for the marketplace |
+| `approveMarketplaceContract(wallet)` | Approve marketplace to handle your Axies |
+| `approveMaterialMarketplace(wallet)` | Approve marketplace to handle your materials |
+| `approveBatchTransfer(wallet)` | Approve batch transfer contract |
+
+### Gas price options
+
+Transaction helpers accept an optional `GasPriceOptions` parameter to customize gas pricing:
 
 ```typescript
 import { parseUnits } from "ethers";
 import { transferAxie, buyMarketplaceOrder } from "axie-tools";
 
-// Use dynamic gas price from the network (default behavior)
+// Use dynamic gas price from the network.
 await transferAxie(signer, recipientAddress, axieId);
 
-// Or pass a custom gas price
+// Or pass a custom gas price.
 const customGasPrice = parseUnits("30", "gwei");
-await transferAxie(signer, recipientAddress, axieId, { gasPrice: customGasPrice });
+await transferAxie(signer, recipientAddress, axieId, {
+  gasPrice: customGasPrice,
+});
 
-// Works with all transaction functions
-await buyMarketplaceOrder(axieId, wallet, token, apiKey, { gasPrice: customGasPrice });
+await buyMarketplaceOrder(axieId, wallet, token, apiKey, {
+  gasPrice: customGasPrice,
+});
 ```
 
-By default, all transactions now fetch the current gas price from the network, which helps avoid issues during network congestion. If you need a specific gas price, you can override it with the `gasPrice` option.
+By default, transaction helpers fetch the current gas price from the network. If fetching fails, helpers fall back to 26 gwei.
+
+### Contracts
+
+| Function | Description |
+| --- | --- |
+| `getAxieContract(provider)` | Axie NFT contract instance |
+| `getWETHContract(provider)` | WETH token contract instance |
+| `getUSDCContract(provider)` | USDC token contract instance |
+
+### Auth
+
+| Function | Description |
+| --- | --- |
+| `refreshToken(refreshToken)` | Refresh an expired access token |
+| `ensureMarketplaceToken()` | Validate and refresh token if needed |
+
+## Bot examples
+
+Ready-to-use bot templates in the [examples folder](./examples/):
+
+| Bot | Description |
+| --- | --- |
+| [floor-sniper.js](./examples/floor-sniper.js) | Polls floor price, auto-buys when it drops below target |
+| [auto-lister.js](./examples/auto-lister.js) | Lists all owned Axies at floor price with configurable markup |
+
+```bash
+cd examples && npm install
+
+# Snipe Axies below 0.001 WETH, check every 30 seconds
+node floor-sniper.js 0.001 30
+
+# List all your Axies at floor + 10%
+node auto-lister.js 1.1
+```
+
+### Single operation scripts
+
+| Script | Description |
+| --- | --- |
+| [settle-order.js](./examples/settle-order.js) | Buy an Axie by ID |
+| [create-order.js](./examples/create-order.js) | List an Axie at a fixed price |
+| [create-order-auction.js](./examples/create-order-auction.js) | Create a Dutch auction |
+| [cancel-order.js](./examples/cancel-order.js) | Cancel a listing |
+| [material-order.js](./examples/material-order.js) | List materials for sale |
+| [transfer-all.js](./examples/transfer-all.js) | Batch transfer all Axies |
+
+## CLI
+
+For manual operations and testing, use the interactive CLI:
+
+```bash
+npx axie-tools
+```
+
+> [!TIP]
+> Create a `.env` file from `.env.example` to avoid entering values every time.
+
+The CLI provides: account info, token refresh, WETH/marketplace approvals, create/cancel/buy orders for Axies and Materials, auctions, bulk operations, and transfers. For automation, use the library directly.
 
 ## Building from source
 
-Want to hack on it or try the latest changes?
-
-```shell
+```bash
 git clone https://github.com/alexx855/axie-tools.git
 cd axie-tools
 npm install
 npm run build
 ```
 
-If you use pnpm:
+## Getting your access token
 
-```shell
-git clone https://github.com/alexx855/axie-tools.git
-cd axie-tools
-pnpm install --frozen-lockfile
-pnpm build
+Log into [app.axieinfinity.com](https://app.axieinfinity.com/), open dev tools, go to Application > Local storage > https://app.axieinfinity.com, and copy the `accessToken` value.
+
+[Screenshot showing where to find it](https://github.com/alexx855/axie-tools/blob/main/examples/accessTokenConsoleScreenshot.png)
+
+## Troubleshooting
+
+| Error | Fix |
+| --- | --- |
+| "Signer is not maker" | Access token expired. Re-login and grab a fresh token. |
+| "Insufficient WETH allowance" | Run `approveWETH(wallet)` first. |
+| "Marketplace contract not approved" | Run `approveMarketplaceContract(wallet)` or `approveMaterialMarketplace(wallet)`. |
+| Transactions failing | Not enough RON for gas. Top up your wallet. |
+| API connection problems | Check your `SKYMAVIS_API_KEY` at the [developer console](https://developers.roninchain.com/console/applications). |
+| RPC connection problems | Set `RONIN_RPC_URL` to another Ronin-compatible provider such as dRPC, Alchemy, Chainstack, or Moralis. |
+| "Material token not found" | Invalid material ID. Use `validateMaterialToken()` to verify. |
+
+## Important notes
+
+- Requires **Node.js 22** or newer.
+- All trading uses **WETH**, not ETH. Ensure your wallet has enough WETH before buying.
+- Listing items is off-chain but requires contract approvals first. Buying and canceling are on-chain transactions.
+- `MARKETPLACE_ACCESS_TOKEN` expires periodically. For long-running bots, use `refreshToken()` and `getTokenExpirationInfo()` to keep it fresh.
+- Marketplace API and public RPC providers have rate limits. Use reasonable poll intervals (30s+) in bot loops.
+
+## Testing
+
+Tests use Bun and require environment variables:
+
+```bash
+# Axie tests
+AXIE_ID=123456 PRICE=0.1 bun test tests/create-order-axie.test.ts --timeout 30000
+AXIE_ID=123456 bun test tests/cancel-order-axie.test.ts --timeout 30000
+AXIE_ID=123456 bun test tests/settle-order-axie.test.ts --timeout 30000
+bun test tests/create-orders-all-axies.test.ts --timeout 60000
+
+# Material tests
+MATERIAL_ID=1099511627776 QUANTITY=5 PRICE=0.001 bun test tests/create-order-materials.test.ts --timeout 30000
+MATERIAL_ID=1099511627776 bun test tests/cancel-order-materials.test.ts --timeout 30000
+MATERIAL_ID=1099511627776 QUANTITY=5 PRICE=0.001 bun test tests/settle-order-materials.test.ts --timeout 30000
+
+# Floor price tests
+AXIE_ID=1 bun test tests/axie-floor-price.test.ts --timeout 45000
+MATERIAL_ID=1099511627776 bun test tests/material-floor-price.test.ts --timeout 30000
 ```
-
-## Examples
-
-There are working scripts in the `examples/` folder you can try out.
-
-Set them up once:
-
-```shell
-cd examples
-cp .env.example .env
-npm install
-```
-
-Then run whatever you want:
-
-```shell
-# Buy an Axie
-node settle-order.js $AXIE_ID
-
-# List an Axie for 0.1 ETH
-node create-order.js $AXIE_ID 0.1
-
-# Create an auction (start at 0.1, end at 0.5, run for 24 hours)
-node create-order-auction.js $AXIE_ID 0.1 0.5 24
-
-# Cancel your listing
-node cancel-order.js $AXIE_ID
-
-# List some materials
-node material-order.js $MATERIAL_ID [quantity] [priceInETH]
-
-# Send all your Axies to another wallet
-node transfer-all.js $RECIPIENT_ADDRESS
-```
-
-All the source code is here:
-
-- [settle-order.js](./examples/settle-order.js)
-- [create-order.js](./examples/create-order.js)
-- [create-order-auction.js](./examples/create-order-auction.js)
-- [cancel-order.js](./examples/cancel-order.js)
-- [material-order.js](./examples/material-order.js)
-- [transfer-all.js](./examples/transfer-all.js)
-
-### Getting your access token
-
-Log into [app.axieinfinity.com](https://app.axieinfinity.com/), open your browser's dev tools, and go to Application > Local storage > https://app.axieinfinity.com. Copy the `accessToken` value.
-
-[Here's a screenshot](https://github.com/alexx855/axie-tools/blob/main/examples/accessTokenConsoleScreenshot.png) if you need to see exactly where it is.
-
-## When things go wrong
-
-**"Signer is not maker" error**
-
-Your access token expired or is wrong. Log out of the marketplace, log back in, and grab a fresh token from dev tools.
-
-**"Insufficient WETH allowance" error**
-
-You need to approve WETH spending first. Either run `approveWETH()` or use the CLI approve option.
-
-**"Marketplace contract not approved" error**
-
-Same deal but for the marketplace contracts. Run `approveMarketplaceContract()` for Axies or `approveMaterialMarketplace()` for materials.
-
-**Transactions failing**
-
-Probably not enough RON for gas. Make sure you have some RON in your wallet.
-
-**API connection problems**
-
-Your SkyMavis API key is missing or wrong. Get a new one from the [developer console](https://developers.roninchain.com/console/applications) and update your .env file.
-
-**"Material token not found" error**
-
-The material ID you're using doesn't exist. Double check the ID or use `validateMaterialToken()` to verify it's real.
-
-### Getting help
-
-Look at the examples folder for working code, check the function list above, or open an issue on GitHub if something's broken.
-
-### Things to know
-
-All buying and selling uses WETH, not ETH. Make sure you have enough WETH in your wallet before trying to buy stuff.
-
-Listing items for sale happens off-chain but you need to approve the contracts first. Actually buying and canceling listings are real blockchain transactions.
 
 ## Contributing
 
-Want to help out? Check the [Contributing Guidelines](CONTRIBUTING.md) for the full details, but basically:
-
-1. Fork the repo
-2. Clone it: `git clone https://github.com/your-username/axie-tools.git`
-3. Install stuff: `pnpm install`
-4. Make a branch: `git checkout -b feature/your-thing`
-5. Do your changes and add tests
-6. Run tests: `npm test`
-7. Send a pull request
-
-Open an issue if you find bugs or have ideas.
-
-### Testing
-
-Tests run with bun. You need the environment variables set up and might need to bump the timeout since blockchain stuff is slow.
-
-Some examples:
-
-```shell
-# Test listing an Axie
-AXIE_ID=111111 PRICE=0.1 bun test tests/create-order-axie.test.ts --timeout 30000
-
-# Test listing all your Axies at floor price
-bun test tests/create-orders-all-axies.test.ts --timeout 60000
-
-# Test buying an Axie
-AXIE_ID=111111 PRICE=0.1 bun test tests/settle-order-axie.test.ts --timeout 30000
-
-# Test listing materials
-MATERIAL_ID=1099511627776 QUANTITY=5 PRICE=0.001 bun test tests/create-order-materials.test.ts --timeout 30000
-
-# Test buying materials
-MATERIAL_ID=1099511627776 QUANTITY=5 PRICE=0.001 bun test tests/settle-order-materials.test.ts --timeout 30000
-```
+Check the [Contributing Guidelines](CONTRIBUTING.md) for details. Open an issue for bugs or ideas.
 
 ## License
 
-Released under the MIT License. See the `LICENSE` file for details.
-
+Released under the MIT License. See the [LICENSE](LICENSE) file.

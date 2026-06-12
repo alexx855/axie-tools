@@ -33,7 +33,7 @@ async function auction() {
     throw new Error("Please provide a valid axieID as the first argument");
   }
   if (!startPrice || !endPrice || isNaN(startPrice) || isNaN(endPrice)) {
-    throw new Error("Please provide valid start and end prices in ETH");
+    throw new Error("Please provide valid start and end prices in WETH");
   }
   if (isNaN(durationHours) || durationHours < 1 || durationHours > 168) {
     throw new Error("Please provide a valid duration in hours (1-168)");
@@ -79,8 +79,8 @@ async function auction() {
   }
 
   console.log(`✅ Created auction for Axie ${axieId}!`);
-  console.log(`Start price: ${startPrice} ETH`);
-  console.log(`End price: ${endPrice} ETH`);
+  console.log(`Start price: ${startPrice} WETH`);
+  console.log(`End price: ${endPrice} WETH`);
   console.log(`Duration: ${durationHours} hours`);
   console.log(
     `Current price in USD: ${result.data.createOrder.currentPriceUsd}`,

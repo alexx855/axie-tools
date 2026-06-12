@@ -13,12 +13,6 @@
     "outDir": "dist",
     "allowImportingTsExtensions": false
   },
-  "include": [
-    "lib/**/*.ts",
-    "lib/**/*.json",
-    "index.ts",
-    "cli.ts",
-    "tests/settle-order.test.ts"
-  ],
+  "include": ["lib/**/*.ts", "lib/**/*.json", "index.ts", "cli.ts"],
   "exclude": ["node_modules", "scripts"]
 }

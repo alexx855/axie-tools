@@ -1,4 +1,4 @@
-name: Release axie-tools
+name: Prepare axie-tools release
 
 on:
   workflow_dispatch:
@@ -23,25 +23,14 @@ on:
         description: "Custom version (used when release_type = custom), e.g. 1.8.0"
         type: string
         required: false
-      npm_tag:
-        description: "npm dist-tag to publish under"
-        type: choice
-        required: true
-        default: latest
-        options:
-          - latest
-          - next
-          - beta
-          - alpha
 
 permissions:
-  contents: write   # push commits and tags, create releases
-  packages: write   # publish to npm registry
-  id-token: write   # enable npm provenance
+  contents: write
+  pull-requests: write
 
 jobs:
-  release:
-    name: Release and publish to npm
+  prepare-release:
+    name: Create version bump PR
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -52,15 +41,13 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
           run_install: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: "https://registry.npmjs.org/"
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -73,7 +60,8 @@ jobs:
             echo "custom_version is required when release_type=custom" >&2
             exit 1
           fi
-      - name: Bump version (no tag)
+
+      - name: Bump version
         id: bump
         run: |
           set -euo pipefail
@@ -90,73 +78,25 @@ jobs:
           fi
 
           NEW_VERSION=$(node -p "require('./package.json').version")
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Configure Git
+      - name: Create release pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEW_VERSION: ${{ steps.bump.outputs.new_version }}
         run: |
+          set -euo pipefail
+          BRANCH="release/v${NEW_VERSION}"
+
           git config --local user.email "action@github.com"
           git config --local user.name "github-actions[bot]"
-
-      - name: Commit version bump
-        run: |
-          set -euo pipefail
-          git add -A
+          git checkout -b "$BRANCH"
+          git add package.json
           git commit -m "chore(release): v${NEW_VERSION}"
-          git push origin HEAD
+          git push --set-upstream origin "$BRANCH"
 
-      - name: Create and push Git tag (fail if exists)
-        run: |
-          set -euo pipefail
-          TAG="v${NEW_VERSION}"
-          # Fail fast if tag already exists locally
-          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
-            echo "Tag $TAG already exists locally. Aborting release." >&2
-            exit 1
-          fi
-          # Fail fast if tag exists on remote
-            if git ls-remote --exit-code origin "refs/tags/$TAG" >/dev/null 2>&1; then
-            echo "Tag $TAG already exists on origin. Aborting release." >&2
-            exit 1
-          fi
-          git tag -a "$TAG" -m "Release $TAG"
-          git push origin "$TAG"
-
-      - name: Build
-        run: pnpm build
-
-      - name: Publish to npm (with provenance)
-        id: npm_publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
-            echo "NPM_TOKEN secret is not set. Please add it in repository settings > Secrets and variables > Actions." >&2
-            exit 1
-          fi
-          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
-          # pnpm forwards flags to npm under the hood
-          pnpm publish --no-git-checks --access public --tag "${{ github.event.inputs.npm_tag }}" --provenance
-
-      - name: Rollback git changes on npm publish failure
-        if: failure() && steps.npm_publish.conclusion == 'failure'
-        run: |
-          set -euo pipefail
-          echo "npm publish failed, rolling back git changes..."
-          # Delete the tag from remote and local
-          git push --delete origin "v${NEW_VERSION}" || true
-          git tag -d "v${NEW_VERSION}" || true
-          # Reset the version commit
-          git reset --hard HEAD~1
-          git push --force-with-lease origin HEAD
-          echo "Rollback completed"
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: "v${{ env.NEW_VERSION }}"
-          name: "Release v${{ env.NEW_VERSION }}"
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "chore(release): v${NEW_VERSION}" \
+            --body "Version bump for axie-tools v${NEW_VERSION}.\n\nAfter this PR is merged and CI is green, run the \"Publish axie-tools release\" workflow for v${NEW_VERSION}."

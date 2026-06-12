@@ -1,5 +1,10 @@
 import { AbiCoder, Interface, Signer } from "ethers";
-import { apiRequest, getMarketplaceApi, getGasPrice, type GasPriceOptions } from "../utils";
+import {
+  apiRequest,
+  getMarketplaceApi,
+  getGasPrice,
+  type GasPriceOptions,
+} from "../utils";
 import { getMarketplaceContract } from "../contracts";
 
 // We need to access the APP_AXIE_ORDER_EXCHANGE ABI directly since it's not wrapped in contracts.ts yet

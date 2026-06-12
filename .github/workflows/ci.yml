@@ -16,7 +16,6 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
           run_install: false
 
       - name: Setup Node.js
@@ -32,4 +31,4 @@ jobs:
         run: pnpm build
 
       - name: Format check
-        run: pnpm run format
+        run: pnpm run format:check

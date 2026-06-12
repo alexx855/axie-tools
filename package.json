@@ -2,23 +2,28 @@
   "name": "axie-tools",
   "version": "1.7.7",
   "type": "module",
-  "description": "TypeScript library and CLI tool for interacting with Axie Infinity marketplace and NFTs on Ronin network. Features marketplace operations for Axies and Materials (buy/sell/delist), batch transfers, and wallet information.",
+  "packageManager": "pnpm@10.33.2",
+  "description": "TypeScript SDK for building Axie Infinity trading bots and AI agents on Ronin network. Programmatic marketplace operations for Axies, Materials, and Consumables (buy/sell/delist), batch transfers, floor price detection, and wallet management. Includes interactive CLI.",
   "scripts": {
-    "build": "npm run build:lib && npm run build:cli",
+    "clean": "rm -rf dist",
+    "build": "pnpm clean && pnpm run build:lib && pnpm run build:cli",
     "build:lib": "esbuild index.ts --bundle --platform=node --format=esm --outfile=dist/index.js --external:ethers --external:@roninbuilders/contracts --external:prompts && tsc --emitDeclarationOnly",
     "build:cli": "esbuild cli.ts --bundle --platform=node --format=esm --outfile=dist/cli.js --external:ethers --external:@roninbuilders/contracts --external:dotenv --external:prompts",
     "postbuild": "chmod +x dist/cli.js",
     "start": "node dist/cli.js",
     "dev": "bun cli.ts",
-    "format": "npx @biomejs/biome format --write",
-    "format:check": "npx @biomejs/biome format --check .",
-    "prepublishOnly": "npm run build",
+    "format": "biome format . --write",
+    "format:check": "biome ci . --linter-enabled=false --assist-enabled=false --vcs-enabled=true --vcs-client-kind=git --vcs-use-ignore-file=true",
+    "prepublishOnly": "pnpm build",
     "test:create-order-axie": "AXIE_ID=<$AXIE_ID> PRICE=<$PRICE> bun test tests/create-order-axie.test.ts --timeout 30000",
     "test:cancel-order-axie": "AXIE_ID=<$AXIE_ID> PRICE=<$PRICE> bun test tests/cancel-order-axie.test.ts --timeout 30000",
     "test:settle-order-axie": "AXIE_ID=<$AXIE_ID> PRICE=<$PRICE> bun test tests/settle-order-axie.test.ts --timeout 30000",
     "test:create-order-materials": "MATERIAL_ID=<$MATERIAL_ID> QUANTITY=<$QUANTITY> PRICE=<$PRICE> bun test tests/create-order-materials.test.ts --timeout 30000",
     "test:cancel-order-materials": "MATERIAL_ID=<$MATERIAL_ID> QUANTITY=<$QUANTITY> PRICE=<$PRICE> bun test tests/cancel-order-materials.test.ts --timeout 30000",
-    "test:settle-order-materials": "MATERIAL_ID=<$MATERIAL_ID> QUANTITY=<$QUANTITY> PRICE=<$PRICE> bun test tests/settle-order-materials.test.ts --timeout 30000"
+    "test:settle-order-materials": "MATERIAL_ID=<$MATERIAL_ID> QUANTITY=<$QUANTITY> PRICE=<$PRICE> bun test tests/settle-order-materials.test.ts --timeout 30000",
+    "test:create-order-consumables": "CONSUMABLE_ID=$CONSUMABLE_ID QUANTITY=$QUANTITY PRICE=$PRICE bun test tests/create-order-consumables.test.ts --timeout 30000",
+    "test:cancel-order-consumables": "CONSUMABLE_ID=$CONSUMABLE_ID QUANTITY=$QUANTITY PRICE=$PRICE bun test tests/cancel-order-consumables.test.ts --timeout 30000",
+    "test:settle-order-consumables": "CONSUMABLE_ID=$CONSUMABLE_ID QUANTITY=$QUANTITY PRICE=$PRICE bun test tests/settle-order-consumables.test.ts --timeout 30000"
   },
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -29,8 +34,18 @@
   "publishConfig": {
     "access": "public"
   },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
   "engines": {
     "node": ">=22"
+  },
+  "pnpm": {
+    "overrides": {
+      "ws": "8.20.1"
+    }
   },
   "keywords": [
     "axie-infinity",
@@ -57,11 +72,23 @@
     "buy-sell",
     "delist",
     "weth",
-    "ron-token",
+    "ronin-network",
     "developers",
     "crypto",
     "nft-tools",
-    "gaming-tools"
+    "gaming-tools",
+    "ai-agent",
+    "trading-bot",
+    "sniper-bot",
+    "nft-bot",
+    "programmatic-trading",
+    "axie-bot",
+    "market-automation",
+    "nft-automation",
+    "ronin-bot",
+    "erc1155",
+    "consumables",
+    "materials"
   ],
   "author": {
     "name": "Alex Pedersen",
@@ -77,17 +104,17 @@
     "axie-tools": "dist/cli.js"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
+    "@biomejs/biome": "2.4.16",
     "@types/bun": "^1.2.19",
-    "@types/node": "^18.15.11",
+    "@types/node": "^25.9.3",
     "@types/prompts": "^2.4.9",
-    "esbuild": "^0.20.0"
+    "esbuild": "^0.28.1"
   },
   "dependencies": {
     "@roninbuilders/contracts": "^0.6.8",
-    "dotenv": "^17.2.1",
+    "dotenv": "^17.4.2",
     "ethers": "^6.13.4",
     "prompts": "^2.4.2",
-    "typescript": "^5.1.6"
+    "typescript": "^6.0.3"
   }
 }

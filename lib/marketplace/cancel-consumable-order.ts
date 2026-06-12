@@ -1,20 +1,20 @@
 import { Signer } from "ethers";
 import {
   apiRequest,
-  getMarketplaceApi,
   getGasPrice,
+  getMarketplaceApi,
   type GasPriceOptions,
 } from "../utils";
 import {
   getMarketplaceContract,
   getERC1155ExchangeContract,
 } from "../contracts";
-import { MATERIAL_QUERIES } from "../material";
+import { CONSUMABLE_QUERIES } from "../consumable";
 import type { ICancellationResult, IOrder } from "../marketplace";
-import { encodeMaterialOrderData } from "../material";
+import { encodeConsumableOrderData } from "../consumable";
 
-export default async function cancelMaterialOrder(
-  materialId: string,
+export default async function cancelConsumableOrder(
+  consumableId: string,
   signer: Signer,
   skyMavisApiKey: string,
   options?: GasPriceOptions,
@@ -24,8 +24,8 @@ export default async function cancelMaterialOrder(
   const { graphqlUrl, headers } = getMarketplaceApi(skyMavisApiKey);
 
   const variables = {
-    tokenType: "Material",
-    tokenId: materialId,
+    tokenType: "Consumable",
+    tokenId: consumableId,
     owner: userAddress,
     skipId: true,
   };
@@ -34,7 +34,7 @@ export default async function cancelMaterialOrder(
     graphqlUrl,
     JSON.stringify({
       operationName: "GetErc1155DetailByOwner",
-      query: MATERIAL_QUERIES.GET_MATERIAL_BY_OWNER,
+      query: CONSUMABLE_QUERIES.GET_CONSUMABLE_BY_OWNER,
       variables,
     }),
     headers,
@@ -61,7 +61,7 @@ export default async function cancelMaterialOrder(
   for (const order of userOrders) {
     try {
       // Use shared encoding function
-      const encodedOrderData = encodeMaterialOrderData(order);
+      const encodedOrderData = encodeConsumableOrderData(order);
 
       // Create cancel order transaction through marketplace gateway
       const marketGatewayContract = getMarketplaceContract(signer);
@@ -70,7 +70,6 @@ export default async function cancelMaterialOrder(
         ERC1155_EXCHANGE_CONTRACT.interface.encodeFunctionData("cancelOrder", [
           encodedOrderData,
         ]);
-
       const gasPrice = await getGasPrice(signer, options);
 
       const tx = await marketGatewayContract.interactWith(

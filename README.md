@@ -1,8 +1,7 @@
 # Axie Tools
 
 ```typescript
-import { buyMarketplaceOrder, approveWETH, createProvider } from "axie-tools";
-import { Wallet } from "ethers";
+import { buyMarketplaceOrder, approveWETH, createProvider, Wallet } from "axie-tools";
 
 const provider = createProvider(process.env.SKYMAVIS_API_KEY);
 const wallet = new Wallet(process.env.PRIVATE_KEY, provider);
@@ -26,11 +25,33 @@ TypeScript SDK for building Axie Infinity trading bots and AI agents on Ronin ne
 
 ## Quick start
 
+Choose the entry point that matches how you want to use Axie Tools.
+
+### Interactive CLI
+
+Run the CLI directly with `npx`:
+
 ```bash
-npm install axie-tools ethers dotenv
+npx axie-tools
 ```
 
-Set up your credentials in a `.env` file:
+The CLI downloads `axie-tools` and its runtime dependencies for that run. No project install is required.
+
+### TypeScript/JavaScript library
+
+Install the SDK in your project:
+
+```bash
+npm install axie-tools
+```
+
+`ethers` and `dotenv` are package dependencies, so `npm install axie-tools` is enough for Axie Tools itself. The
+examples below import common `ethers` helpers from `axie-tools`; add `ethers` or `dotenv` directly to your own project
+only if your application imports those packages itself.
+
+### Credentials
+
+Create a `.env` file for local CLI use or load the same values through your application runtime:
 
 ```bash
 PRIVATE_KEY="your_ronin_wallet_private_key"
@@ -38,6 +59,12 @@ MARKETPLACE_ACCESS_TOKEN="your_access_token"
 SKYMAVIS_API_KEY="your_api_key"
 # Optional: override the default Ronin public RPC
 RONIN_RPC_URL="https://api.roninchain.com/rpc"
+```
+
+For local Node.js 22+ scripts, you can load that file without adding another dependency:
+
+```bash
+node --env-file=.env your-script.mjs
 ```
 
 You need:
@@ -49,9 +76,7 @@ You need:
 ### Check floor price and buy an Axie
 
 ```typescript
-import { getAxieFloorPrice, buyMarketplaceOrder, approveWETH, createProvider } from "axie-tools";
-import { Wallet } from "ethers";
-import "dotenv/config";
+import { getAxieFloorPrice, buyMarketplaceOrder, approveWETH, createProvider, Wallet } from "axie-tools";
 
 const provider = createProvider(process.env.SKYMAVIS_API_KEY);
 const wallet = new Wallet(process.env.PRIVATE_KEY, provider);
@@ -76,9 +101,14 @@ console.log(`TX: https://app.roninchain.com/tx/${receipt.hash}`);
 ### List all your Axies for sale
 
 ```typescript
-import { getAxieIdsFromAccount, createMarketplaceOrder, approveMarketplaceContract, createProvider } from "axie-tools";
-import { Wallet, parseEther } from "ethers";
-import "dotenv/config";
+import {
+  getAxieIdsFromAccount,
+  createMarketplaceOrder,
+  approveMarketplaceContract,
+  createProvider,
+  Wallet,
+  parseEther,
+} from "axie-tools";
 
 const provider = createProvider(process.env.SKYMAVIS_API_KEY);
 const wallet = new Wallet(process.env.PRIVATE_KEY, provider);
@@ -149,13 +179,21 @@ for (const axieId of axieIds) {
 | `approveMaterialMarketplace(wallet)` | Approve marketplace to handle your materials |
 | `approveBatchTransfer(wallet)` | Approve batch transfer contract |
 
+### Common ethers helpers
+
+| Export | Description |
+| --- | --- |
+| `Wallet` | Create a wallet signer for Ronin transactions |
+| `parseEther(value)` | Convert an ETH/WETH amount to wei |
+| `parseUnits(value, unit)` | Convert a unit-denominated value, such as gwei, to base units |
+| `formatEther(value)` | Format a wei value as ETH/WETH |
+
 ### Gas price options
 
 Transaction helpers accept an optional `GasPriceOptions` parameter to customize gas pricing:
 
 ```typescript
-import { parseUnits } from "ethers";
-import { transferAxie, buyMarketplaceOrder } from "axie-tools";
+import { parseUnits, transferAxie, buyMarketplaceOrder } from "axie-tools";
 
 // Use dynamic gas price from the network.
 await transferAxie(signer, recipientAddress, axieId);
@@ -227,7 +265,7 @@ npx axie-tools
 ```
 
 > [!TIP]
-> Create a `.env` file from `.env.example` to avoid entering values every time.
+> Create a `.env` file from `.env.example` to avoid entering values every time. The CLI loads that file automatically.
 
 The CLI provides: account info, token refresh, WETH/marketplace approvals, create/cancel/buy orders for Axies and Materials, auctions, bulk operations, and transfers. For automation, use the library directly.
 

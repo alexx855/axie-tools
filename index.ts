@@ -43,6 +43,8 @@ import buyMarketplaceOrder, {
 } from "./lib/marketplace/settle-order";
 import { buyMaterialOrder } from "./lib/marketplace/settle-material-order";
 import { buyConsumableOrder } from "./lib/marketplace/settle-consumable-order";
+export { Wallet, parseEther, parseUnits, formatEther } from "ethers";
+export type { Provider, Signer, TransactionReceipt } from "ethers";
 
 export {
   refreshToken,

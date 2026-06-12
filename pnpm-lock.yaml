@@ -15,8 +15,8 @@ importers:
         specifier: ^0.6.8
         version: 0.6.22
       dotenv:
-        specifier: ^17.2.1
-        version: 17.2.2
+        specifier: ^17.4.2
+        version: 17.4.2
       ethers:
         specifier: ^6.13.4
         version: 6.15.0
@@ -309,8 +309,8 @@ packages:
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
 
-  dotenv@17.2.2:
-    resolution: {integrity: sha512-Sf2LSQP+bOlhKWWyhFsn0UsfdK/kCWRv1iuA2gXAwt3dyNabr6QSj00I2V10pidqz69soatm9ZwZvpQMTIOd5Q==}
+  dotenv@17.4.2:
+    resolution: {integrity: sha512-nI4U3TottKAcAD9LLud4Cb7b2QztQMUEfHbvhTH09bqXTxnSie8WnjPALV/WMCrJZ6UV/qHJ6L03OqO3LcdYZw==}
     engines: {node: '>=12'}
 
   esbuild@0.28.1:
@@ -537,7 +537,7 @@ snapshots:
 
   csstype@3.2.3: {}
 
-  dotenv@17.2.2: {}
+  dotenv@17.4.2: {}
 
   esbuild@0.28.1:
     optionalDependencies:

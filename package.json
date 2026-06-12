@@ -1,6 +1,6 @@
 {
   "name": "axie-tools",
-  "version": "1.7.7",
+  "version": "1.8.0",
   "type": "module",
   "packageManager": "pnpm@10.33.2",
   "description": "TypeScript SDK for building Axie Infinity trading bots and AI agents on Ronin network. Programmatic marketplace operations for Axies, Materials, and Consumables (buy/sell/delist), batch transfers, floor price detection, and wallet management. Includes interactive CLI.",

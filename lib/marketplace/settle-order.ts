@@ -69,7 +69,7 @@ export default async function buyMarketplaceOrder(
 
     const gasPrice = await getGasPrice(signer, options);
 
-    // Call the contract with dynamic gas price for faster confirmation
+    // Call the contract with a dynamically determined gas price
     const txBuyAxie = await contract.interactWith(
       "ORDER_EXCHANGE",
       orderExchangeData,

@@ -1,5 +1,5 @@
 import { buyMarketplaceOrder, approveWETH, createProvider } from "axie-tools";
-import { Wallet } from "ethers";
+import { parseEther, Wallet } from "ethers";
 import "dotenv/config";
 
 // Floor price sniper bot
@@ -101,6 +101,7 @@ async function poll() {
       wallet,
       process.env.MARKETPLACE_ACCESS_TOKEN,
       process.env.SKYMAVIS_API_KEY,
+      { maxPrice: parseEther(TARGET_PRICE.toString()) },
     );
     if (receipt) {
       console.log(`Bought! TX: https://app.roninchain.com/tx/${receipt.hash}`);

@@ -41,8 +41,14 @@ import { createConsumableMarketplaceOrder } from "./lib/marketplace/create-consu
 import buyMarketplaceOrder, {
   type BuyMarketplaceOrderOptions,
 } from "./lib/marketplace/settle-order";
-import { buyMaterialOrder } from "./lib/marketplace/settle-material-order";
-import { buyConsumableOrder } from "./lib/marketplace/settle-consumable-order";
+import {
+  buyMaterialOrder,
+  type BuyMaterialOrderOptions,
+} from "./lib/marketplace/settle-material-order";
+import {
+  buyConsumableOrder,
+  type BuyConsumableOrderOptions,
+} from "./lib/marketplace/settle-consumable-order";
 export { Wallet, parseEther, parseUnits, formatEther } from "ethers";
 export type { Provider, Signer, TransactionReceipt } from "ethers";
 
@@ -81,5 +87,7 @@ export {
   getGasPrice,
   type GasPriceOptions,
   type BuyMarketplaceOrderOptions,
+  type BuyMaterialOrderOptions,
+  type BuyConsumableOrderOptions,
   type CancelMarketplaceOrderOptions,
 };

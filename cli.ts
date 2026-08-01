@@ -32,6 +32,26 @@ import {
 } from "./index";
 import "dotenv/config";
 
+const isPositiveWethAmount = (value: string) => {
+  try {
+    return parseEther(value.trim()) > 0n;
+  } catch {
+    return false;
+  }
+};
+
+const getPositiveWethAmount = async (message: string) => {
+  const response = await prompts({
+    type: "text",
+    name: "amount",
+    message,
+    validate: (value: string) =>
+      isPositiveWethAmount(value) || "Enter a positive WETH amount",
+  });
+
+  return response.amount?.trim() || null;
+};
+
 const getAxieId = async () => {
   const response = await prompts({
     type: "number",
@@ -167,7 +187,9 @@ const getPrice = async (
     name: "price",
     message,
     validate: (value: string) =>
-      optional ? true : value && value.length > 0 && !isNaN(parseFloat(value)),
+      optional && !value.trim()
+        ? true
+        : isPositiveWethAmount(value) || "Enter a positive WETH amount",
   });
 
   if (!optional && !response.price) {
@@ -176,6 +198,13 @@ const getPrice = async (
   }
 
   if (optional && !response.price?.trim() && skyMavisApiKey) {
+    const minimumPrice = await getPositiveWethAmount(
+      "💰 Enter the minimum acceptable price (in WETH):",
+    );
+    if (!minimumPrice) {
+      return null;
+    }
+
     console.log("🔍 Getting floor price from marketplace...");
     let floorPrice: string | null = null;
 
@@ -201,8 +230,21 @@ const getPrice = async (
       );
       return null;
     }
+    if (parseEther(floorPrice) < parseEther(minimumPrice)) {
+      console.log(
+        `❌ Floor price ${floorPrice} WETH is below your minimum of ${minimumPrice} WETH.`,
+      );
+      return null;
+    }
+
     console.log(`💰 Using floor price: ${floorPrice} WETH`);
-    return floorPrice;
+    const confirmation = await prompts({
+      type: "confirm",
+      name: "confirmed",
+      message: `List at ${floorPrice} WETH (minimum ${minimumPrice} WETH)?`,
+      initial: false,
+    });
+    return confirmation.confirmed ? floorPrice : null;
   }
 
   return response.price || null;
@@ -422,12 +464,17 @@ async function main() {
           const token = await ensureMarketplaceToken();
           const axieId = await getAxieId();
           if (!axieId) break;
+          const maxPrice = await getPositiveWethAmount(
+            "💰 Enter the maximum price to pay (in WETH):",
+          );
+          if (!maxPrice) break;
           await approveWETH(wallet);
           const receipt = await buyMarketplaceOrder(
             axieId,
             wallet,
             token,
             skyMavisApiKey,
+            { maxPrice: parseEther(maxPrice) },
           );
           if (receipt) {
             console.log("🚀 Transaction successful! Hash:", receipt.hash);
@@ -444,6 +491,10 @@ async function main() {
           if (!materialId) break;
           const quantity = await getQuantity();
           if (!quantity) break;
+          const maxTotalCost = await getPositiveWethAmount(
+            "💰 Enter the maximum total cost to pay (in WETH):",
+          );
+          if (!maxTotalCost) break;
           await approveWETH(wallet);
           const receipt = await buyMaterialOrder(
             materialId,
@@ -451,6 +502,7 @@ async function main() {
             wallet,
             token,
             skyMavisApiKey,
+            { maxTotalCost: parseEther(maxTotalCost) },
           );
           if (receipt) {
             console.log("🚀 Transaction successful! Hash:", receipt.hash);
@@ -467,6 +519,10 @@ async function main() {
           if (!consumableId) break;
           const quantity = await getQuantity();
           if (!quantity) break;
+          const maxTotalCost = await getPositiveWethAmount(
+            "💰 Enter the maximum total cost to pay (in WETH):",
+          );
+          if (!maxTotalCost) break;
           await approveWETH(wallet);
           const receipt = await buyConsumableOrder(
             consumableId,
@@ -474,6 +530,7 @@ async function main() {
             wallet,
             token,
             skyMavisApiKey,
+            { maxTotalCost: parseEther(maxTotalCost) },
           );
           if (receipt) {
             console.log("🚀 Transaction successful! Hash:", receipt.hash);

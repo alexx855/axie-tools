@@ -3,7 +3,9 @@ import { Wallet } from "ethers";
 import cancelMaterialOrder from "../lib/marketplace/cancel-material-order";
 import { createProvider } from "../lib/utils";
 
-test("cancel material order", async () => {
+const liveTest = process.env.RUN_LIVE_TESTS === "1" ? test : test.skip;
+
+liveTest("cancel material order", async () => {
   const { PRIVATE_KEY, SKYMAVIS_API_KEY, MATERIAL_ID } = process.env;
 
   if (!PRIVATE_KEY || !SKYMAVIS_API_KEY || !MATERIAL_ID) {

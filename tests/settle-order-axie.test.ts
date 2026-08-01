@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll, test } from "bun:test";
+import { describe, it, expect, beforeAll } from "bun:test";
 import buyMarketplaceOrder from "../lib/marketplace/settle-order";
-import { Wallet } from "ethers";
+import { parseEther, Wallet } from "ethers";
 import { ensureMarketplaceToken, createProvider } from "../lib/utils";
 import { approveWETH } from "../lib/marketplace/approve";
 import { getWETHContract } from "../lib/contracts";
@@ -17,7 +17,10 @@ interface IMarketplaceAxieOrderResult {
   };
 }
 
-describe("buyMarketplaceOrder", () => {
+const liveDescribe =
+  process.env.RUN_LIVE_TESTS === "1" ? describe : describe.skip;
+
+liveDescribe("buyMarketplaceOrder", () => {
   let wallet: Wallet;
   let skyMavisApiKey: string | undefined;
 
@@ -61,11 +64,12 @@ describe("buyMarketplaceOrder", () => {
     }
 
     const axieIdFromEnv = process.env.AXIE_ID;
+    const maxPriceFromEnv = process.env.MAX_PRICE;
 
-    if (!axieIdFromEnv) {
-      console.warn("AXIE_ID environment variable not set. Skipping test.");
-      test.skip("AXIE_ID environment variable not set.", () => {});
-      return;
+    if (!axieIdFromEnv || !maxPriceFromEnv) {
+      throw new Error(
+        "AXIE_ID and MAX_PRICE environment variables must be set",
+      );
     }
 
     const axieIdToBuy = Number(axieIdFromEnv);
@@ -76,6 +80,7 @@ describe("buyMarketplaceOrder", () => {
       wallet,
       accessToken,
       skyMavisApiKey,
+      { maxPrice: parseEther(maxPriceFromEnv) },
     );
 
     if (!receipt) {

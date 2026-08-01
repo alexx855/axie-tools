@@ -3,7 +3,9 @@ import { Wallet, parseEther } from "ethers";
 import { createMaterialMarketplaceOrder } from "../lib/marketplace/create-material-order";
 import { validateMaterialToken } from "../lib/material";
 
-test("creates a new material order", async () => {
+const liveTest = process.env.RUN_LIVE_TESTS === "1" ? test : test.skip;
+
+liveTest("creates a new material order", async () => {
   const {
     PRIVATE_KEY,
     MARKETPLACE_ACCESS_TOKEN,

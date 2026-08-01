@@ -1,7 +1,9 @@
 import { expect, test } from "bun:test";
 import { getAxieIdsFromAccount, createProvider } from "..";
 
-test("lists all owned axies using Multicall3", async () => {
+const liveTest = process.env.RUN_LIVE_TESTS === "1" ? test : test.skip;
+
+liveTest("lists all owned axies using Multicall3", async () => {
   const skyMavisApiKey = process.env.SKYMAVIS_API_KEY;
   if (!skyMavisApiKey) {
     throw new Error("SKYMAVIS_API_KEY is required");

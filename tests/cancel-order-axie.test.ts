@@ -3,7 +3,10 @@ import { Wallet } from "ethers";
 import cancelMarketplaceOrder from "../lib/marketplace/cancel-order";
 import { createProvider, getMarketplaceApi } from "../lib/utils";
 
-describe("cancelMarketplaceOrder", () => {
+const liveDescribe =
+  process.env.RUN_LIVE_TESTS === "1" ? describe : describe.skip;
+
+liveDescribe("cancelMarketplaceOrder", () => {
   let wallet: Wallet;
   let skyMavisApiKey: string | undefined;
 

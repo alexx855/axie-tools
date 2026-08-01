@@ -82,9 +82,9 @@ These functions or scripts can change marketplace state or submit transactions:
 
 Representative live tests:
 
-- `AXIE_ID=1 bun test tests/axie-floor-price.test.ts --timeout 45000`
-- `AXIE_ID=123456 PRICE=0.1 bun test tests/create-order-axie.test.ts --timeout 30000`
-- `MATERIAL_ID=1099511627776 QUANTITY=5 PRICE=0.001 bun test tests/create-order-materials.test.ts --timeout 30000`
+- `RUN_LIVE_TESTS=1 AXIE_ID=1 bun test tests/axie-floor-price.test.ts --timeout 45000`
+- `RUN_LIVE_TESTS=1 AXIE_ID=123456 PRICE=0.1 bun test tests/create-order-axie.test.ts --timeout 30000`
+- `RUN_LIVE_TESTS=1 MATERIAL_ID=1099511627776 QUANTITY=5 PRICE=0.001 bun test tests/create-order-materials.test.ts --timeout 30000`
 
 ## Task routing
 

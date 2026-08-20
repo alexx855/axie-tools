@@ -13,7 +13,7 @@
   "type": "module",
   "license": "ISC",
   "overrides": {
-    "ws": "8.20.1"
+    "ws": "8.21.0"
   },
   "dependencies": {
     "axie-tools": "^1.8.0",

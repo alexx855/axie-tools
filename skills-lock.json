@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "autoship": {
+      "source": "vercel-labs/autoship",
+      "sourceType": "github",
+      "skillPath": "skills/autoship/SKILL.md",
+      "computedHash": "a813370b550f6b2a7c0dceba1c2f3c06978b10e4bbfbcf39421220d8140ab220"
+    }
+  }
+}

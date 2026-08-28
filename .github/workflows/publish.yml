@@ -3,6 +3,14 @@ name: Publish axie-tools release
 on:
   workflow_dispatch:
     inputs:
+      version:
+        description: "Exact package version to publish, e.g. 1.8.2"
+        type: string
+        required: true
+      commit_sha:
+        description: "Full 40-character main commit SHA containing the version bump"
+        type: string
+        required: true
       npm_tag:
         description: "npm dist-tag to publish under"
         type: choice
@@ -18,24 +26,66 @@ permissions:
   contents: write
   id-token: write
 
+concurrency:
+  group: publish-axie-tools-${{ inputs.version }}
+  cancel-in-progress: false
+
 jobs:
   publish:
-    name: Tag and publish current main
+    name: Publish requested main revision
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
+      - name: Validate request format
+        env:
+          EXPECTED_SHA: ${{ inputs.commit_sha }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "commit_sha must be a full lowercase 40-character Git SHA" >&2
+            exit 1
+          fi
+
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          ref: main
+          persist-credentials: false
+          ref: ${{ inputs.commit_sha }}
+
+      - name: Validate requested release
+        env:
+          EXPECTED_VERSION: ${{ inputs.version }}
+          EXPECTED_SHA: ${{ inputs.commit_sha }}
+        run: |
+          set -euo pipefail
+
+          ACTUAL_SHA=$(git rev-parse HEAD)
+          MAIN_SHA=$(git ls-remote --exit-code origin refs/heads/main | awk '{print $1}')
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+
+          if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+            echo "Checked out $ACTUAL_SHA instead of requested $EXPECTED_SHA" >&2
+            exit 1
+          fi
+
+          if [ "$MAIN_SHA" != "$EXPECTED_SHA" ]; then
+            echo "Requested commit $EXPECTED_SHA is not the current main commit $MAIN_SHA" >&2
+            exit 1
+          fi
+
+          if [ "$PACKAGE_VERSION" != "$EXPECTED_VERSION" ]; then
+            echo "package.json version $PACKAGE_VERSION does not match requested $EXPECTED_VERSION" >&2
+            exit 1
+          fi
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
         with:
           run_install: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: "pnpm"
@@ -45,47 +95,78 @@ jobs:
 
       - name: Resolve version
         id: version
+        env:
+          EXPECTED_VERSION: ${{ inputs.version }}
+          EXPECTED_SHA: ${{ inputs.commit_sha }}
+          NPM_TAG: ${{ inputs.npm_tag }}
         run: |
           set -euo pipefail
-          NEW_VERSION=$(node -p "require('./package.json').version")
+          NEW_VERSION="$EXPECTED_VERSION"
           TAG="v${NEW_VERSION}"
 
-          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
-            echo "Tag $TAG already exists locally. Aborting publish." >&2
-            exit 1
+          REMOTE_TAGS=$(git ls-remote --tags origin)
+          TAG_SHA=$(printf '%s\n' "$REMOTE_TAGS" | awk -v ref="refs/tags/${TAG}^{}" '$2 == ref {print $1}')
+          if [ -z "$TAG_SHA" ]; then
+            TAG_SHA=$(printf '%s\n' "$REMOTE_TAGS" | awk -v ref="refs/tags/${TAG}" '$2 == ref {print $1}')
           fi
 
-          if git ls-remote --exit-code origin "refs/tags/$TAG" >/dev/null 2>&1; then
-            echo "Tag $TAG already exists on origin. Aborting publish." >&2
-            exit 1
+          TAG_EXISTS=false
+          if [ -n "$TAG_SHA" ]; then
+            if [ "$TAG_SHA" != "$EXPECTED_SHA" ]; then
+              echo "Tag $TAG points to $TAG_SHA instead of $EXPECTED_SHA" >&2
+              exit 1
+            fi
+            TAG_EXISTS=true
           fi
 
-          if npm view "axie-tools@${NEW_VERSION}" version >/dev/null 2>&1; then
-            echo "axie-tools@${NEW_VERSION} is already published. Aborting publish." >&2
-            exit 1
+          PUBLISHED_VERSIONS=$(npm view axie-tools versions --json)
+          PACKAGE_EXISTS=false
+          if PUBLISHED_VERSIONS="$PUBLISHED_VERSIONS" EXPECTED_VERSION="$EXPECTED_VERSION" node -e '
+            const versions = JSON.parse(process.env.PUBLISHED_VERSIONS);
+            process.exit((Array.isArray(versions) ? versions : [versions]).includes(process.env.EXPECTED_VERSION) ? 0 : 1);
+          '; then
+            PUBLISHED_SHA=$(npm view "axie-tools@${NEW_VERSION}" gitHead)
+            if [ "$PUBLISHED_SHA" != "$EXPECTED_SHA" ]; then
+              echo "axie-tools@${NEW_VERSION} was published from $PUBLISHED_SHA instead of $EXPECTED_SHA" >&2
+              exit 1
+            fi
+
+            PUBLISHED_DIST_TAG=$(npm view axie-tools "dist-tags.${NPM_TAG}")
+            if [ "$PUBLISHED_DIST_TAG" != "$NEW_VERSION" ]; then
+              echo "npm dist-tag $NPM_TAG points to $PUBLISHED_DIST_TAG instead of $NEW_VERSION" >&2
+              exit 1
+            fi
+            PACKAGE_EXISTS=true
           fi
 
           echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "tag_exists=$TAG_EXISTS" >> "$GITHUB_OUTPUT"
+          echo "package_exists=$PACKAGE_EXISTS" >> "$GITHUB_OUTPUT"
 
       - name: Build
         run: pnpm build
 
       - name: Publish to npm
+        if: steps.version.outputs.package_exists != 'true'
         run: |
           set -euo pipefail
-          npm publish --access public --tag "${{ github.event.inputs.npm_tag }}"
+          npm publish --access public --tag "${{ inputs.npm_tag }}"
 
       - name: Create and push Git tag
+        if: steps.version.outputs.tag_exists != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           git config --local user.email "action@github.com"
           git config --local user.name "github-actions[bot]"
+          gh auth setup-git
           git tag -a "${{ steps.version.outputs.tag }}" -m "Release ${{ steps.version.outputs.tag }}"
           git push origin "${{ steps.version.outputs.tag }}"
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           tag_name: "${{ steps.version.outputs.tag }}"
           name: "Release ${{ steps.version.outputs.tag }}"

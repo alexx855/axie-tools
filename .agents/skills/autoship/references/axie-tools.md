@@ -49,7 +49,9 @@ gh workflow run release.yml --ref main -f release_type=patch
 
 Use `minor` or `major` only when the audited delta and user authorization call
 for it. The workflow runs `pnpm version --no-git-tag-version`, pushes
-`release/v<new-version>`, and opens a PR containing the `package.json` bump.
+`release/v<new-version>`, opens a PR containing the `package.json` bump, and
+dispatches CI against that exact release commit. The preparation workflow does
+not succeed until the dispatched CI run passes.
 
 Wait for the workflow to complete, then verify the generated PR before merging:
 
@@ -67,13 +69,20 @@ Publishing is destructive and externally visible. After explicit authorization
 and all version-PR gates pass, dispatch:
 
 ```bash
-gh workflow run publish.yml --ref main -f npm_tag=latest
+VERSION=1.8.2
+MAIN_SHA=$(git rev-parse origin/main)
+gh workflow run publish.yml \
+  --ref main \
+  -f version="$VERSION" \
+  -f commit_sha="$MAIN_SHA" \
+  -f npm_tag=latest
 ```
 
 Use another dist-tag only when explicitly requested. The workflow builds the
-package, publishes the current `main` version through npm trusted publishing,
-pushes `v<new-version>`, and creates the GitHub release. Do not run `npm publish`
-locally as a fallback without separate authorization.
+exact requested commit only after proving it is still current `main` and its
+`package.json` matches the requested version. It then publishes through npm
+trusted publishing, pushes `v<new-version>`, and creates the GitHub release. Do
+not run `npm publish` locally as a fallback without separate authorization.
 
 ## 4. Definitive completion gates
 
@@ -89,6 +98,7 @@ Do not report release success until all of these are independently verified:
 7. Both workflow runs completed successfully.
 
 If publishing succeeds but a later tag or GitHub-release step fails, report the
-partial state exactly. Do not rerun the whole publish workflow because its
-duplicate-package guard will reject the already published version; repair the
-remaining release metadata only with explicit authorization.
+partial state exactly. The workflow can safely resume when the existing npm
+package and tag point to the requested commit and the requested npm dist-tag is
+already correct. It rejects mismatched package, tag, or dist-tag state instead
+of overwriting it; reconcile such a mismatch only with explicit authorization.

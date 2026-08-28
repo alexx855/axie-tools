@@ -75,5 +75,6 @@ The patch release has been published.
 
 - [templates/setup-repo.sh](templates/setup-repo.sh) writes configuration
   non-interactively and requires `jq`.
-- [templates/automated-release.sh](templates/automated-release.sh) runs an
-  already-authorized compatible release with Autoship 0.1.0.
+- [templates/automated-release.sh](templates/automated-release.sh) requires an
+  explicit authorization marker and independently checks the configured target
+  before running a compatible release with Autoship 0.1.0.

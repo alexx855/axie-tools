@@ -52,3 +52,7 @@ Configured repositories:
 Autoship exits nonzero for missing configuration, authentication failures,
 failed checks, or an unavailable AI service. Treat a nonzero result and any
 partially completed publish as state to audit, not as permission to retry.
+
+The bundled automated template additionally requires
+`AUTOSHIP_RELEASE_AUTHORIZED=yes` and repeats the configured-target
+compatibility checks before invoking Autoship.

@@ -1,104 +1,54 @@
-# Command Reference
+# Command reference
 
-Complete reference for all autoship commands. For quick start and common patterns, see SKILL.md.
-
-## Main Command
+Use the reviewed CLI version explicitly:
 
 ```bash
-autoship [repo] [options]
+npx autoship@0.1.0 [repo] [options]
 ```
 
-If `repo` is omitted, displays an interactive selector with all configured repositories.
+If `repo` is omitted, Autoship prompts for a configured alias.
 
-### Options
+## Release options
 
-| Option | Description |
-|--------|-------------|
-| `-t, --type <type>` | Release type: `patch`, `minor`, or `major` |
-| `-m, --message <message>` | Custom changeset description (skips AI generation) |
-| `-y, --yes` | Skip all confirmation prompts |
-| `-h, --help` | Show help |
-| `-V, --version` | Show version |
+- `-t, --type <type>` selects `patch`, `minor`, or `major`.
+- `-m, --message <message>` supplies reviewed release text and skips AI text
+  generation.
+- `-y, --yes` skips Autoship confirmations. It does not grant authorization.
+- `-h, --help` displays help.
+- `-V, --version` displays the installed version.
 
-### Examples
+Run the target-checkout compatibility gate in `SKILL.md` before any release.
 
 ```bash
-# Interactive mode - prompts for everything
-autoship myproject
+# Interactive release
+npx autoship@0.1.0 myproject
 
-# Specify release type, AI generates message
-autoship myproject -t minor
-
-# Fully automated with custom message
-autoship myproject -t patch -m "Fixed login validation" -y
-
-# Fully automated with AI message
-autoship myproject -t patch -y
+# Authorized patch with reviewed release text
+npx autoship@0.1.0 myproject -t patch -m "Fix login validation" -y
 ```
 
-## add Command
-
-Add a new repository configuration.
+## Repository configuration
 
 ```bash
-autoship add <name>
+npx autoship@0.1.0 add myproject
+npx autoship@0.1.0 list
 ```
 
-### Arguments
+`add` prompts for the GitHub owner, repository, and base branch. Configuration
+is stored in `~/.autoship/config.json`.
 
-| Argument | Description |
-|----------|-------------|
-| `name` | Friendly name for the repository (used in other commands) |
+Typical list output:
 
-### Interactive Prompts
-
-1. **GitHub owner** - Organization or username (required)
-2. **Repository name** - GitHub repository name (defaults to `name`)
-3. **Base branch** - Branch to release from (defaults to `main`)
-
-### Example
-
-```bash
-autoship add myproject
-# > GitHub owner (org or user): vercel-labs
-# > Repository name: myproject
-# > Base branch: main
-# Repository "myproject" added!
-# Clone URL: https://github.com/vercel-labs/myproject.git
-```
-
-## list Command
-
-List all configured repositories.
-
-```bash
-autoship list
-```
-
-### Output
-
-```
+```text
 Configured repositories:
-  - myproject (vercel-labs/myproject)
-  - another-lib (vercel-labs/another-lib)
+  - myproject (example-owner/example-repo)
 ```
 
-## Environment Variables
+## Environment
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `AI_GATEWAY_API_KEY` | API key for AI-powered suggestions and descriptions | Yes |
-| `GITHUB_TOKEN` | GitHub token (uses `gh` CLI auth by default) | No |
+- `AI_GATEWAY_API_KEY` is required only when `-m` is omitted.
+- `GH_TOKEN` is optional when the local `gh` CLI is already authenticated.
 
-## Exit Codes
-
-| Code | Meaning |
-|------|---------|
-| 0 | Success |
-| 1 | Error (see output for details) |
-
-Common error scenarios:
-- Repository not configured
-- GitHub CLI not authenticated
-- CI checks failed
-- AI API unavailable (falls back to manual input)
+Autoship exits nonzero for missing configuration, authentication failures,
+failed checks, or an unavailable AI service. Treat a nonzero result and any
+partially completed publish as state to audit, not as permission to retry.

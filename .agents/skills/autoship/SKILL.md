@@ -1,216 +1,79 @@
 ---
 name: autoship
-description: CLI tool for automated changeset-based releases with AI-generated descriptions. Use when the user needs to release a package, create changesets, bump versions, or automate npm publishing workflows. Triggers include requests to "release a package", "create a changeset", "publish to npm", "bump the version", "automate releases", or any task involving version management and package publishing for repositories using the changesets workflow.
-allowed-tools: Bash(autoship:*), Bash(npx autoship:*), Bash(git:*), Bash(gh:*), Bash(npm:*), Bash(pnpm:*), Bash(node:*), Bash(rg:*)
+description: Automate package releases with Autoship in Changesets repositories, or follow a documented repository-native release path when Autoship is incompatible.
+allowed-tools: Bash(npx autoship@0.1.0:*), Bash(test:*), Bash(git:*), Bash(gh:*), Bash(npm:*), Bash(pnpm:*), Bash(node:*), Bash(rg:*), Bash(jq:*), Bash(mktemp:*)
 ---
 
-# Automated Releases with autoship
+# Automated Releases with Autoship
 
-## Compatibility Check
+Autoship 0.1.0 assumes the configured target repository uses Changesets. Treat
+version preparation, PR merging, and npm publishing as separate external
+mutations. Confirm that the user's request authorizes each mutation before it
+runs; `--yes` removes CLI prompts but never grants authorization.
 
-Before running a mutating `autoship <repo>` command, verify that the target
-repository actually uses Changesets:
+## Route the target
+
+Before any mutating Autoship command:
+
+1. Read the repository alias from `~/.autoship/config.json` and resolve its
+   `cloneUrl` and `baseBranch`.
+2. Clone that exact target and branch into a temporary checkout.
+3. Run all compatibility checks inside that checkout:
 
 ```bash
 test -f .changeset/config.json
-node -e "const p=require('./package.json'); process.exit(p.devDependencies?.['@changesets/cli'] ? 0 : 1)"
-rg "changesets/action" .github/workflows
+node -e \
+  "const p=require('./package.json');
+  process.exit(p.devDependencies?.['@changesets/cli'] ? 0 : 1)"
+rg 'changesets/action' .github/workflows
 ```
 
-If any of those integration points are absent, do not run the stock release
-command and do not add Changesets just to satisfy this skill. Inspect the
-repository's existing release workflows and adapt the sequence to them. Keep
-version preparation and package publishing as separate mutating boundaries,
-and require explicit user authorization for each unless the current request
-already grants it. Never use `--yes` to bypass an authorization boundary.
+Do not run the mutating stock command unless all three checks pass in the
+configured target. Never add Changesets merely to satisfy this skill. Inspect
+the target's existing release workflows and use a documented repository-native
+route when any check fails.
 
-Axie Tools is a documented non-Changesets target. Follow
-[references/axie-tools.md](references/axie-tools.md) instead of the stock
-10-step flow.
+Axie Tools is a documented non-Changesets target. Read and follow
+[references/axie-tools.md](references/axie-tools.md).
 
-## Core Workflow
+## Compatible Changesets repositories
 
-For repositories that pass the Changesets compatibility check, every release
-follows this pattern:
-
-Every release follows this pattern:
-
-1. **Configure**: `autoship add <name>` (one-time setup)
-2. **Release**: `autoship <name>` (interactive) or `autoship <name> -t patch -y` (automated)
-
-The tool handles the complete release cycle:
-- Clone repository
-- Analyze changes and suggest release type (patch/minor/major)
-- Generate AI-powered changeset description
-- Create and merge changeset PR
-- Wait for and merge Version Packages PR
-- Trigger npm publish
-
-## Requirements
-
-Before using autoship, ensure:
+Read [references/configuration.md](references/configuration.md) before first-time
+setup and [references/commands.md](references/commands.md) for CLI details.
 
 ```bash
-# GitHub CLI must be authenticated
-gh auth login
+# One-time interactive configuration
+npx autoship@0.1.0 add myproject
 
-# API key for AI features
-export AI_GATEWAY_API_KEY="your-key"
+# Interactive release
+npx autoship@0.1.0 myproject
+
+# Authorized, non-interactive patch release with a reviewed message
+npx autoship@0.1.0 myproject -t patch -m "Fix release issue" -y
 ```
 
-## Essential Commands
+Omit `-m` only when `AI_GATEWAY_API_KEY` is available and AI-generated release
+text is wanted. Use [references/ci-integration.md](references/ci-integration.md)
+only when building CI for a compatible Changesets repository.
 
-```bash
-# One-time setup: add a repository
-autoship add myproject
-# Prompts for: owner, repo name, base branch
+## Completion
 
-# List configured repositories
-autoship list
+Autoship clones the target, creates and merges a Changesets PR, waits for the
+Version Packages PR, and merges that PR to trigger publishing. Do not report
+success until the package version, dist-tag, Git tag, GitHub release, and source
+commit independently agree. Report partial state exactly and do not retry a
+publish blindly after npm accepted a package.
 
-# Interactive release (prompts for type and message)
-autoship myproject
+Typical successful output ends with:
 
-# Automated release (no prompts)
-autoship myproject -t patch -y
-autoship myproject -t minor -y
-autoship myproject -t major -y
-
-# Release with custom message (skips AI generation)
-autoship myproject -t patch -m "Fixed login bug" -y
-```
-
-## Command Options
-
-```bash
-autoship [repo]                    # Interactive repo selection if omitted
-  -t, --type <type>                # Release type: patch, minor, major
-  -m, --message <message>          # Custom changeset description
-  -y, --yes                        # Skip all confirmations
-  -h, --help                       # Show help
-```
-
-## Common Patterns
-
-### Fully Automated Patch Release
-
-```bash
-autoship myproject -t patch -y
-```
-
-### AI-Assisted Interactive Release
-
-```bash
-autoship myproject
-# 1. AI analyzes commits since last release
-# 2. AI suggests release type (patch/minor/major)
-# 3. You confirm or change the type
-# 4. AI generates changeset description
-# 5. You review and approve
-# 6. Tool handles PR creation and merging
-```
-
-### Custom Message Release
-
-```bash
-autoship myproject -t minor -m "Added new authentication providers" -y
-```
-
-### CI/CD Integration
-
-```bash
-# In GitHub Actions or CI pipeline
-export AI_GATEWAY_API_KEY="${{ secrets.AI_GATEWAY_API_KEY }}"
-npx autoship myproject -t patch -y
-```
-
-## What autoship Does (10 Steps)
-
-These steps apply only to compatible Changesets repositories:
-
-1. **Clone** - Clones the repository from the base branch
-2. **Analyze** - Finds latest version tag, analyzes commits and diff
-3. **Suggest** - AI suggests release type based on changes
-4. **Generate** - AI generates changeset description
-5. **Branch** - Creates release branch with changeset file
-6. **PR** - Creates pull request for the changeset
-7. **Wait** - Waits for CI checks to pass
-8. **Merge** - Merges the changeset PR
-9. **Version PR** - Waits for changesets action to create Version Packages PR
-10. **Publish** - Merges Version Packages PR to trigger npm publish
-
-## Output Format
-
-autoship provides clear step-by-step output:
-
-```
-[1/10] Cloning repository from main...
-  > Repository cloned
-  > Package: my-package @ 1.2.3
-
-[2/10] Creating release branch...
-  > Branch created: release/patch-1706123456789
-
-[3/10] Generating changeset...
-  > Changeset created: fluffy-pants-dance.md
-
-...
-
+```text
 Release Complete!
 The patch release has been published.
 ```
 
-## Configuration
+## Templates
 
-Config is stored at `~/.autoship/config.json`:
-
-```json
-{
-  "repos": {
-    "myproject": {
-      "owner": "vercel-labs",
-      "repo": "myproject",
-      "baseBranch": "main",
-      "cloneUrl": "https://github.com/vercel-labs/myproject.git"
-    }
-  }
-}
-```
-
-## Deep-Dive Documentation
-
-| Reference | When to Use |
-|-----------|-------------|
-| [references/commands.md](references/commands.md) | Full command reference with all options |
-| [references/configuration.md](references/configuration.md) | Config file format and repository setup |
-| [references/ci-integration.md](references/ci-integration.md) | GitHub Actions and CI/CD setup |
-
-## Ready-to-Use Templates
-
-| Template | Description |
-|----------|-------------|
-| [templates/automated-release.sh](templates/automated-release.sh) | Fully automated release script |
-| [templates/setup-repo.sh](templates/setup-repo.sh) | Non-interactive repository setup |
-
-```bash
-./templates/automated-release.sh myproject patch
-./templates/setup-repo.sh myproject vercel-labs myproject main
-```
-
-## Troubleshooting
-
-### "No repositories configured"
-
-Run `autoship add <name>` to configure a repository first.
-
-### "Repository not found"
-
-Check `autoship list` for available repos. The name is case-sensitive.
-
-### CI checks failing
-
-The tool will show which checks failed. Fix the issues in the target repository, then retry.
-
-### AI generation failed
-
-If AI fails, autoship falls back to manual input. Ensure `AI_GATEWAY_API_KEY` is set.
+- [templates/setup-repo.sh](templates/setup-repo.sh) writes configuration
+  non-interactively and requires `jq`.
+- [templates/automated-release.sh](templates/automated-release.sh) runs an
+  already-authorized compatible release with Autoship 0.1.0.

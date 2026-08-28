@@ -26,33 +26,32 @@ if [[ ! -f "$CONFIG_FILE" ]]; then
   echo '{"repos":{}}' > "$CONFIG_FILE"
 fi
 
-# Check if jq is available for JSON manipulation
-if command -v jq &> /dev/null; then
-  # Use jq for proper JSON handling
-  CLONE_URL="https://github.com/$OWNER/$REPO.git"
-
-  jq --arg name "$NAME" \
-     --arg owner "$OWNER" \
-     --arg repo "$REPO" \
-     --arg branch "$BASE_BRANCH" \
-     --arg url "$CLONE_URL" \
-     '.repos[$name] = {owner: $owner, repo: $repo, baseBranch: $branch, cloneUrl: $url}' \
-     "$CONFIG_FILE" > "$CONFIG_FILE.tmp" && mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
-
-  echo "Repository '$NAME' added!"
-  echo "  Owner: $OWNER"
-  echo "  Repo: $REPO"
-  echo "  Branch: $BASE_BRANCH"
-  echo "  Clone URL: $CLONE_URL"
-else
-  # Fallback: use autoship add with expect-like input
-  echo "Warning: jq not found, using interactive fallback"
-  echo "Install jq for non-interactive setup: brew install jq"
-  echo ""
-  echo "Running: autoship add $NAME"
-  echo "Please enter:"
-  echo "  Owner: $OWNER"
-  echo "  Repo: $REPO"
-  echo "  Branch: $BASE_BRANCH"
-  autoship add "$NAME"
+# jq is required because autoship add is interactive.
+if ! command -v jq &> /dev/null; then
+  echo "Error: jq is required for non-interactive setup" >&2
+  exit 1
 fi
+
+CLONE_URL="https://github.com/$OWNER/$REPO.git"
+TEMP_CONFIG="$CONFIG_FILE.tmp.$$"
+trap 'rm -f "$TEMP_CONFIG"' EXIT
+
+if ! jq --arg name "$NAME" \
+   --arg owner "$OWNER" \
+   --arg repo "$REPO" \
+   --arg branch "$BASE_BRANCH" \
+   --arg url "$CLONE_URL" \
+   '.repos[$name] = {owner: $owner, repo: $repo, baseBranch: $branch, cloneUrl: $url}' \
+   "$CONFIG_FILE" > "$TEMP_CONFIG"; then
+  echo "Error: failed to update Autoship configuration" >&2
+  exit 1
+fi
+
+mv "$TEMP_CONFIG" "$CONFIG_FILE"
+trap - EXIT
+
+echo "Repository '$NAME' added!"
+echo "  Owner: $OWNER"
+echo "  Repo: $REPO"
+echo "  Branch: $BASE_BRANCH"
+echo "  Clone URL: $CLONE_URL"

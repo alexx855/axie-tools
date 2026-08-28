@@ -33,7 +33,7 @@ if ! gh auth status &> /dev/null; then
   exit 1
 fi
 
-if [[ -z "${AI_GATEWAY_API_KEY:-}" ]]; then
+if [[ -z "$MESSAGE" && -z "${AI_GATEWAY_API_KEY:-}" ]]; then
   echo "Error: AI_GATEWAY_API_KEY environment variable not set"
   exit 1
 fi
@@ -42,9 +42,9 @@ fi
 echo "Starting $TYPE release for $REPO..."
 
 if [[ -n "$MESSAGE" ]]; then
-  autoship "$REPO" -t "$TYPE" -m "$MESSAGE" -y
+  npx autoship@0.1.0 "$REPO" -t "$TYPE" -m "$MESSAGE" -y
 else
-  autoship "$REPO" -t "$TYPE" -y
+  npx autoship@0.1.0 "$REPO" -t "$TYPE" -y
 fi
 
 echo "Release complete!"

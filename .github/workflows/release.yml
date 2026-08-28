@@ -25,6 +25,7 @@ on:
         required: false
 
 permissions:
+  actions: write
   contents: write
   pull-requests: write
 
@@ -32,19 +33,21 @@ jobs:
   prepare-release:
     name: Create version bump PR
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
         with:
           run_install: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: "pnpm"
@@ -53,21 +56,24 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Validate inputs
+        env:
+          TYPE: ${{ inputs.release_type }}
+          CUSTOM: ${{ inputs.custom_version }}
         run: |
           set -euo pipefail
-          TYPE="${{ github.event.inputs.release_type }}"
-          if [ "$TYPE" = "custom" ] && [ -z "${{ github.event.inputs.custom_version }}" ]; then
+          if [ "$TYPE" = "custom" ] && [ -z "$CUSTOM" ]; then
             echo "custom_version is required when release_type=custom" >&2
             exit 1
           fi
 
       - name: Bump version
         id: bump
+        env:
+          TYPE: ${{ inputs.release_type }}
+          PREID: ${{ inputs.preid }}
+          CUSTOM: ${{ inputs.custom_version }}
         run: |
           set -euo pipefail
-          TYPE="${{ github.event.inputs.release_type }}"
-          PREID="${{ github.event.inputs.preid }}"
-          CUSTOM="${{ github.event.inputs.custom_version }}"
 
           if [ "$TYPE" = "prerelease" ]; then
             pnpm version prerelease --preid "$PREID" --no-git-tag-version
@@ -90,6 +96,7 @@ jobs:
 
           git config --local user.email "action@github.com"
           git config --local user.name "github-actions[bot]"
+          gh auth setup-git
           git checkout -b "$BRANCH"
           git add package.json
           git commit -m "chore(release): v${NEW_VERSION}"
@@ -100,3 +107,29 @@ jobs:
             --head "$BRANCH" \
             --title "chore(release): v${NEW_VERSION}" \
             --body "Version bump for axie-tools v${NEW_VERSION}.\n\nAfter this PR is merged and CI is green, run the \"Publish axie-tools release\" workflow for v${NEW_VERSION}."
+
+          RELEASE_SHA=$(git rev-parse HEAD)
+          gh workflow run ci.yml --ref "$BRANCH"
+
+          RUN_ID=""
+          for _ in $(seq 1 30); do
+            RUN_ID=$(gh run list \
+              --workflow ci.yml \
+              --branch "$BRANCH" \
+              --event workflow_dispatch \
+              --limit 10 \
+              --json databaseId,headSha \
+              --jq ".[] | select(.headSha == \"${RELEASE_SHA}\") | .databaseId" \
+              | head -n 1)
+            if [ -n "$RUN_ID" ]; then
+              break
+            fi
+            sleep 2
+          done
+
+          if [ -z "$RUN_ID" ]; then
+            echo "Timed out waiting for CI run on $RELEASE_SHA" >&2
+            exit 1
+          fi
+
+          gh run watch "$RUN_ID" --exit-status

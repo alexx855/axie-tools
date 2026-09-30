@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "axie-tools": "^1.8.0",
-    "dotenv": "^17.4.2",
+    "dotenv": "^18.0.4",
     "ethers": "^6.16.0"
   }
 }

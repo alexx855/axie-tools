@@ -67,6 +67,9 @@ export default async function createMarketplaceOrder(
     endedAt,
     expiredAt,
   } = orderData;
+  if (BigInt(basePrice) <= 0n) {
+    throw new Error("Axie listing price must be positive");
+  }
 
   // Get contract addresses
   const AXIE_CONTRACT_ADDRESS = await getAxieContract().getAddress();

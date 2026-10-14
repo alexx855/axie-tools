@@ -255,7 +255,7 @@ async function main() {
   let skyMavisApiKey = process.env.SKYMAVIS_API_KEY;
   if (!skyMavisApiKey) {
     const response = await prompts({
-      type: "text",
+      type: "password",
       name: "apiKey",
       message:
         "🔑 Enter your Skymavis project API key (get from https://developers.roninchain.com/console/applications/):",
@@ -419,7 +419,7 @@ async function main() {
 
           if (!refreshTokenValue) {
             const response = await prompts({
-              type: "text",
+              type: "password",
               name: "refreshToken",
               message: "Enter refresh token",
               validate: (value: string) => value.length > 0,

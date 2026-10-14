@@ -309,7 +309,13 @@ Log into [app.axieinfinity.com](https://app.axieinfinity.com/), open dev tools, 
 
 ## Testing
 
-Tests use Bun and require environment variables:
+Run the offline regressions without credentials, marketplace requests, or transactions:
+
+```bash
+bun --no-env-file run test:offline
+```
+
+Live integration tests use Bun and require environment variables plus explicit opt-in:
 
 ```bash
 # Axie tests

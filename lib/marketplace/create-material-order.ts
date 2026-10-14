@@ -51,6 +51,9 @@ export async function createMaterialMarketplaceOrder(
     endedAt,
     expiredAt,
   } = orderData;
+  if (BigInt(unitPrice) <= 0n) {
+    throw new Error("Material listing price must be positive");
+  }
 
   // Get contract addresses
   const MATERIAL_CONTRACT_ADDRESS = await getMaterialContract().getAddress();
@@ -65,6 +68,17 @@ export async function createMaterialMarketplaceOrder(
     chainId: "2020",
     verifyingContract: MARKETPLACE_CONTRACT_ADDRESS,
   };
+  const provider = createProvider(skyMavisApiKey);
+  const signerWithProvider = signer.connect(provider);
+  const makerAddress = address.replace("ronin:", "0x");
+  const currentNonce =
+    options?.nonce ??
+    (await getMarketplaceContract(signerWithProvider).makerNonce(makerAddress));
+  const nonce = BigInt(currentNonce).toString();
+  const apiNonce = Number(nonce);
+  if (!Number.isSafeInteger(apiNonce) || apiNonce < 0) {
+    throw new Error("Material nonce cannot be represented exactly by the API");
+  }
 
   console.log(`🔍 Checking ownership for address: ${address}`);
 
@@ -123,11 +137,8 @@ export async function createMaterialMarketplaceOrder(
     endedAt: "0", // Fixed price listing
     endedUnitPrice: "0",
     expectedState: "0",
-    nonce: options?.nonce || "0",
+    nonce,
   };
-
-  const provider = createProvider(skyMavisApiKey);
-  const signerWithProvider = signer.connect(provider);
 
   const signature = await signerWithProvider.signTypedData(
     domain,
@@ -198,7 +209,7 @@ export async function createMaterialMarketplaceOrder(
   const variables = {
     order: {
       maker: address.replace("ronin:", "0x"), // Use 0x format for API
-      nonce: 0, // Hardcoded as per working example
+      nonce: apiNonce,
       assets: [
         {
           id: materialId,

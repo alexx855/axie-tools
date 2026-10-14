@@ -1,7 +1,11 @@
 import { Interface, Signer, TransactionReceipt } from "ethers";
 import { getMarketplaceContract, getWETHContract } from "../contracts";
 import type { IOrder } from "../marketplace";
-import { getAxieDetails, encodeAxieOrderData } from "../axie";
+import {
+  getAxieDetails,
+  encodeAxieOrderData,
+  validateAxieOrder,
+} from "../axie";
 import { getGasPrice, type GasPriceOptions } from "../utils";
 
 import APP_AXIE_ORDER_EXCHANGE from "@roninbuilders/contracts/app_axie_order_exchange";
@@ -36,6 +40,7 @@ export default async function buyMarketplaceOrder(
       return false;
     }
 
+    order = await validateAxieOrder(order, axieId);
     const address = await signer.getAddress();
 
     const orderPrice = BigInt(order.currentPrice);

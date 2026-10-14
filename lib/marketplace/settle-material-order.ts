@@ -79,20 +79,16 @@ export async function buyMaterialOrder(
       return false;
     }
 
-    // Sort by price (ascending) for best price first, but skip the very cheapest
-    // which might be stale or have validation issues
+    // Compare integer wei without losing precision.
     const sortedValidOrders = validOrders.sort((a: any, b: any) => {
-      const priceA = parseFloat(a.currentPrice);
-      const priceB = parseFloat(b.currentPrice);
-      return priceA - priceB;
+      const priceA = BigInt(a.currentPrice);
+      const priceB = BigInt(b.currentPrice);
+      return priceA < priceB ? -1 : priceA > priceB ? 1 : 0;
     });
-
-    // Skip the first few cheapest orders as they might be stale or have issues
-    const ordersToTry = sortedValidOrders.slice(3); // Skip 3 cheapest orders
 
     // Find the first order with sufficient quantity
     let order: any = null;
-    for (const candidateOrder of ordersToTry) {
+    for (const candidateOrder of sortedValidOrders) {
       const availableQuantity = parseInt(
         candidateOrder.assets[0].availableQuantity,
       );

@@ -12,6 +12,7 @@
     "postbuild": "chmod +x dist/cli.js",
     "start": "node dist/cli.js",
     "dev": "bun cli.ts",
+    "test:offline": "bun --no-env-file --no-install test tests/purchase-price-limits.test.ts tests/offline-marketplace-regressions.test.ts tests/offline-cli-examples.test.ts",
     "format": "biome format . --write",
     "format:check": "biome ci . --linter-enabled=false --assist-enabled=false --vcs-enabled=true --vcs-client-kind=git --vcs-use-ignore-file=true",
     "prepublishOnly": "pnpm build",

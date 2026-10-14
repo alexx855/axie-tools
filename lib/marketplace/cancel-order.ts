@@ -1,4 +1,5 @@
-import { AbiCoder, Interface, Signer } from "ethers";
+import { Interface, Signer } from "ethers";
+import { encodeAxieOrderData, validateAxieOrder } from "../axie";
 import {
   apiRequest,
   getMarketplaceApi,
@@ -99,34 +100,14 @@ export default async function cancelMarketplaceOrder(
     orderToCancel = result.data.axie.order;
   }
 
-  const orderData = [
-    orderToCancel.maker,
-    orderToCancel.kind === "Sell" ? 1 : 0,
-    [
-      [
-        orderToCancel.assets[0].erc === "Erc721" ? 1 : 0,
-        orderToCancel.assets[0].address,
-        +orderToCancel.assets[0].id,
-        +orderToCancel.assets[0].quantity,
-      ],
-    ],
-    orderToCancel.expiredAt,
-    orderToCancel.paymentToken,
-    orderToCancel.startedAt,
-    orderToCancel.basePrice,
-    orderToCancel.endedAt,
-    orderToCancel.endedPrice,
-    orderToCancel.expectedState || 0,
-    orderToCancel.nonce,
-    orderToCancel.marketFeePercentage,
-  ];
-
-  const encodedOrderData = AbiCoder.defaultAbiCoder().encode(
-    [
-      "(address maker, uint8 kind, (uint8 erc,address addr,uint256 id,uint256 quantity)[] assets, uint256 expiredAt, address paymentToken, uint256 startedAt, uint256 basePrice, uint256 endedAt, uint256 endedPrice, uint256 expectedState, uint256 nonce, uint256 marketFeePercentage)",
-    ],
-    [orderData],
+  // Snapshot before the signer await can yield to code holding the cached order.
+  const snapshot = structuredClone(orderToCancel);
+  const order = await validateAxieOrder(
+    snapshot,
+    axieId,
+    await signer.getAddress(),
   );
+  const encodedOrderData = encodeAxieOrderData(order);
 
   const axieOrderExchangeInterface = new Interface(APP_AXIE_ORDER_EXCHANGE.abi);
   const orderExchangePayload = axieOrderExchangeInterface.encodeFunctionData(

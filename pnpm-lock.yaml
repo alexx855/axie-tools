@@ -15,8 +15,8 @@ importers:
         specifier: ^0.6.24
         version: 0.6.24
       dotenv:
-        specifier: ^18.0.5
-        version: 18.0.5
+        specifier: ^18.0.8
+        version: 18.0.8
       ethers:
         specifier: ^6.17.0
         version: 6.17.0
@@ -301,8 +301,8 @@ packages:
   bun-types@1.4.3:
     resolution: {integrity: sha512-tinRJNGOmUN+tEAsn2y2e942n9JHRHR42iUYzDH75NmhJqVBokGSQkkfSFdNWwsANIdrK6ACH9t01M452YyTwg==}
 
-  dotenv@18.0.5:
-    resolution: {integrity: sha512-aBrGvt6KhjxbEnatqMWOMidftwsrCiCvqh1yNIGB9QyF0J+VcWkKDMsvYOEm7ZS82oiV+BT1sTOtIlAmUlTpwQ==}
+  dotenv@18.0.8:
+    resolution: {integrity: sha512-2KDeoFoK/zRtcnbunCDlLG5VWVMcyqeQc6iK65o231nfNAcuGrKoqUQfJFUtBI+QlShk5HKIHxwebBtUl3rEfA==}
     engines: {node: '>=12'}
     hasBin: true
 
@@ -530,7 +530,7 @@ snapshots:
       '@types/node': 26.6.5
       undici-types: 8.12.3
 
-  dotenv@18.0.5: {}
+  dotenv@18.0.8: {}
 
   esbuild@0.28.2:
     optionalDependencies:

@@ -239,6 +239,9 @@ Ready-to-use bot templates in the [examples folder](./examples/):
 | [auto-lister.js](./examples/auto-lister.js) | Lists all owned Axies at floor price with configurable markup |
 
 ```bash
+# From the repository root, build the local SDK used by these examples.
+pnpm install --frozen-lockfile
+pnpm build
 cd examples && npm install
 
 # Snipe Axies below 0.001 WETH, check every 30 seconds

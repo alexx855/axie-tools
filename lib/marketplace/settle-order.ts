@@ -1,12 +1,18 @@
 import { Interface, Signer, TransactionReceipt } from "ethers";
 import { getMarketplaceContract, getWETHContract } from "../contracts";
 import type { IOrder } from "../marketplace";
-import { getAxieDetails, encodeAxieOrderData } from "../axie";
+import {
+  getAxieDetails,
+  encodeAxieOrderData,
+  validateAxieOrder,
+} from "../axie";
 import { getGasPrice, type GasPriceOptions } from "../utils";
 
 import APP_AXIE_ORDER_EXCHANGE from "@roninbuilders/contracts/app_axie_order_exchange";
 
 export interface BuyMarketplaceOrderOptions extends GasPriceOptions {
+  /** Maximum WETH, in wei, this purchase may spend. */
+  maxPrice: bigint;
   /** Pre-fetched order data. If not provided, will be fetched from the API */
   existingOrder?: IOrder;
 }
@@ -16,8 +22,12 @@ export default async function buyMarketplaceOrder(
   signer: Signer,
   accessToken: string,
   skyMavisApiKey: string,
-  options?: BuyMarketplaceOrderOptions,
+  options: BuyMarketplaceOrderOptions,
 ): Promise<TransactionReceipt | false> {
+  if (typeof options?.maxPrice !== "bigint" || options.maxPrice <= 0n) {
+    throw new Error("buyMarketplaceOrder requires a positive maxPrice in wei");
+  }
+
   try {
     let order: IOrder | null | undefined = options?.existingOrder;
 
@@ -30,13 +40,20 @@ export default async function buyMarketplaceOrder(
       return false;
     }
 
+    order = await validateAxieOrder(order, axieId);
     const address = await signer.getAddress();
+
+    const orderPrice = BigInt(order.currentPrice);
+    if (orderPrice > options.maxPrice) {
+      console.error("Order price exceeds the supplied maximum price");
+      return false;
+    }
 
     // Check WETH balance
     const wethContract = getWETHContract(signer);
     const wethBalance = await wethContract.balanceOf(address);
 
-    if (BigInt(wethBalance) < BigInt(order.currentPrice)) {
+    if (BigInt(wethBalance) < orderPrice) {
       console.error("Insufficient WETH balance");
       return false;
     }
@@ -64,7 +81,7 @@ export default async function buyMarketplaceOrder(
     // Encode the values again
     const orderExchangeData = axieOrderExchangeInterface.encodeFunctionData(
       "settleOrder",
-      [settleInfo, BigInt(order.currentPrice)],
+      [settleInfo, orderPrice],
     );
 
     const gasPrice = await getGasPrice(signer, options);

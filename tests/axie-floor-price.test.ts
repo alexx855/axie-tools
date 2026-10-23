@@ -3,11 +3,12 @@ import { getAxieFloorPrice } from "../index";
 
 const SKYMAVIS_API_KEY = process.env.SKYMAVIS_API_KEY;
 
-if (!SKYMAVIS_API_KEY) {
-  throw new Error("SKYMAVIS_API_KEY environment variable is required");
-}
+const liveTest = process.env.RUN_LIVE_TESTS === "1" ? test : test.skip;
 
-test("getAxieFloorPrice fetches floor price correctly", async () => {
+liveTest("getAxieFloorPrice fetches floor price correctly", async () => {
+  if (!SKYMAVIS_API_KEY) {
+    throw new Error("SKYMAVIS_API_KEY environment variable is required");
+  }
   console.log("🔍 Testing getAxieFloorPrice function...");
 
   const floorPrice = await getAxieFloorPrice(SKYMAVIS_API_KEY);

@@ -1,4 +1,4 @@
-import { AbiCoder } from "ethers";
+import { AbiCoder, formatEther } from "ethers";
 import { apiRequest, getMarketplaceApi } from "./utils";
 import type { IOrder } from "./marketplace";
 import { ORDER_FRAGMENTS } from "./marketplace";
@@ -303,6 +303,7 @@ export async function getMaterialFloorPrice(
   const { graphqlUrl, headers } = getMarketplaceApi(skyMavisApiKey);
 
   try {
+    const quantityNeeded = BigInt(requestedQuantity ?? 0);
     const response = await fetch(graphqlUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...headers },
@@ -329,34 +330,35 @@ export async function getMaterialFloorPrice(
       (order: any) =>
         order.expiredAt * 1000 > Date.now() &&
         order.assets?.[0]?.availableQuantity &&
-        parseInt(order.assets[0].availableQuantity) > 0,
+        BigInt(order.assets[0].availableQuantity) > 0n &&
+        BigInt(order.currentPrice) > 0n,
     );
 
     if (validOrders.length === 0) {
       return null;
     }
 
-    if (!requestedQuantity || requestedQuantity <= 0) {
+    if (quantityNeeded <= 0n) {
       const cheapestOrder = validOrders[0];
-      return (Number(cheapestOrder.currentPrice) / 1e18).toFixed(6);
+      return formatEther(BigInt(cheapestOrder.currentPrice));
     }
 
-    let remainingQuantity = requestedQuantity;
-    let totalCost = 0;
-    let ordersUsed = 0;
+    let remainingQuantity = quantityNeeded;
+    let totalCost = 0n;
 
     for (const order of validOrders) {
-      const availableQuantity = parseInt(order.assets[0].availableQuantity);
-      const quantityToUse = Math.min(remainingQuantity, availableQuantity);
-      const orderPrice = Number(order.currentPrice) / 1e18;
+      const availableQuantity = BigInt(order.assets[0].availableQuantity);
+      const quantityToUse =
+        remainingQuantity < availableQuantity
+          ? remainingQuantity
+          : availableQuantity;
+      const orderPrice = BigInt(order.currentPrice);
 
       totalCost += quantityToUse * orderPrice;
       remainingQuantity -= quantityToUse;
-      ordersUsed++;
-
-      if (remainingQuantity <= 0) {
-        const averagePrice = totalCost / requestedQuantity;
-        return averagePrice.toFixed(6);
+      if (remainingQuantity <= 0n) {
+        // Round up only at the final wei boundary, never to display precision.
+        return formatEther((totalCost + quantityNeeded - 1n) / quantityNeeded);
       }
     }
 
@@ -382,8 +384,8 @@ export function encodeMaterialOrderData(order: IOrder): string {
     [
       2, // ERC1155 type
       order.assets[0].address,
-      parseInt(order.assets[0].id),
-      parseInt(order.assets[0].quantity),
+      BigInt(order.assets[0].id),
+      BigInt(order.assets[0].quantity),
     ],
     order.expiredAt,
     order.paymentToken,

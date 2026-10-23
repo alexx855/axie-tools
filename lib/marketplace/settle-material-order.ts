@@ -12,14 +12,23 @@ import {
 } from "../contracts";
 import { MATERIAL_QUERIES } from "../material";
 
+export interface BuyMaterialOrderOptions extends GasPriceOptions {
+  /** Maximum WETH, in wei, this purchase may spend in total. */
+  maxTotalCost: bigint;
+}
+
 export async function buyMaterialOrder(
   materialId: string,
   quantity: number,
   signer: Signer,
   accessToken: string,
   skyMavisApiKey: string,
-  options?: GasPriceOptions,
+  options: BuyMaterialOrderOptions,
 ): Promise<TransactionReceipt | false> {
+  if (typeof options?.maxTotalCost !== "bigint" || options.maxTotalCost <= 0n) {
+    throw new Error("buyMaterialOrder requires a positive maxTotalCost in wei");
+  }
+
   const query = MATERIAL_QUERIES.GET_MATERIAL_ORDERS;
 
   const variables = {
@@ -70,20 +79,16 @@ export async function buyMaterialOrder(
       return false;
     }
 
-    // Sort by price (ascending) for best price first, but skip the very cheapest
-    // which might be stale or have validation issues
+    // Compare integer wei without losing precision.
     const sortedValidOrders = validOrders.sort((a: any, b: any) => {
-      const priceA = parseFloat(a.currentPrice);
-      const priceB = parseFloat(b.currentPrice);
-      return priceA - priceB;
+      const priceA = BigInt(a.currentPrice);
+      const priceB = BigInt(b.currentPrice);
+      return priceA < priceB ? -1 : priceA > priceB ? 1 : 0;
     });
-
-    // Skip the first few cheapest orders as they might be stale or have issues
-    const ordersToTry = sortedValidOrders.slice(3); // Skip 3 cheapest orders
 
     // Find the first order with sufficient quantity
     let order: any = null;
-    for (const candidateOrder of ordersToTry) {
+    for (const candidateOrder of sortedValidOrders) {
       const availableQuantity = parseInt(
         candidateOrder.assets[0].availableQuantity,
       );
@@ -102,6 +107,10 @@ export async function buyMaterialOrder(
     const wethContract = getWETHContract(signer);
     const wethBalance = await wethContract.balanceOf(address);
     const totalCost = BigInt(order.currentPrice) * BigInt(quantity);
+
+    if (totalCost > options.maxTotalCost) {
+      return false;
+    }
 
     if (BigInt(wethBalance) < totalCost) {
       return false;

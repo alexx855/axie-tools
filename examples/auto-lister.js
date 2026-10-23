@@ -1,4 +1,4 @@
-import { parseEther, Wallet } from "ethers";
+import { parseEther, formatEther, Wallet } from "ethers";
 import {
   getAxieIdsFromAccount,
   getAxieFloorPrice,
@@ -19,9 +19,10 @@ import "dotenv/config";
 //   node auto-lister.js 1.1     # List all at floor + 10%
 //   node auto-lister.js 0.95    # List all at 5% below floor (quick sell)
 
-const MARKUP = parseFloat(process.argv[2] || "1.0");
+const MARKUP = process.argv[2] || "1.0";
+const markup = parseEther(MARKUP);
 
-if (isNaN(MARKUP) || MARKUP <= 0) {
+if (markup <= 0n) {
   throw new Error("Markup multiplier must be a positive number");
 }
 
@@ -45,7 +46,12 @@ if (!floorPrice) {
   throw new Error("Could not determine floor price");
 }
 
-const listingPrice = (parseFloat(floorPrice) * MARKUP).toFixed(6);
+const scale = parseEther("1");
+const listingPriceWei = (parseEther(floorPrice) * markup + scale - 1n) / scale;
+if (listingPriceWei <= 0n) {
+  throw new Error("Derived listing price must be positive");
+}
+const listingPrice = formatEther(listingPriceWei);
 console.log(
   `Floor: ${floorPrice} WETH | Listing at: ${listingPrice} WETH (${MARKUP}x)`,
 );
@@ -72,7 +78,7 @@ for (const axieId of axieIds) {
   const orderData = {
     address,
     axieId: axieId.toString(),
-    basePrice: parseEther(listingPrice).toString(),
+    basePrice: listingPriceWei.toString(),
     endedPrice: "0",
     startedAt,
     endedAt: 0,

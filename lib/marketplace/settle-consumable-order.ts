@@ -12,14 +12,25 @@ import {
 } from "../contracts";
 import { CONSUMABLE_QUERIES } from "../consumable";
 
+export interface BuyConsumableOrderOptions extends GasPriceOptions {
+  /** Maximum WETH, in wei, this purchase may spend in total. */
+  maxTotalCost: bigint;
+}
+
 export async function buyConsumableOrder(
   consumableId: string,
   quantity: number,
   signer: Signer,
   accessToken: string,
   skyMavisApiKey: string,
-  options?: GasPriceOptions,
+  options: BuyConsumableOrderOptions,
 ): Promise<TransactionReceipt | false> {
+  if (typeof options?.maxTotalCost !== "bigint" || options.maxTotalCost <= 0n) {
+    throw new Error(
+      "buyConsumableOrder requires a positive maxTotalCost in wei",
+    );
+  }
+
   const query = CONSUMABLE_QUERIES.GET_CONSUMABLE_ORDERS;
 
   const { graphqlUrl, headers: apiHeaders } = getMarketplaceApi(skyMavisApiKey);
@@ -103,6 +114,10 @@ export async function buyConsumableOrder(
     const wethContract = getWETHContract(signer);
     const wethBalance = await wethContract.balanceOf(address);
     const totalCost = BigInt(order.currentPrice) * BigInt(quantity);
+
+    if (totalCost > options.maxTotalCost) {
+      return false;
+    }
 
     if (BigInt(wethBalance) < totalCost) {
       return false;

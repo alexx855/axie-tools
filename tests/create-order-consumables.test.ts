@@ -3,7 +3,9 @@ import { Wallet, parseEther } from "ethers";
 import { createConsumableMarketplaceOrder } from "../lib/marketplace/create-consumable-order";
 import { validateConsumableToken } from "../lib/consumable";
 
-test("creates a new consumable order", async () => {
+const liveTest = process.env.RUN_LIVE_TESTS === "1" ? test : test.skip;
+
+liveTest("creates a new consumable order", async () => {
   const {
     PRIVATE_KEY,
     MARKETPLACE_ACCESS_TOKEN,

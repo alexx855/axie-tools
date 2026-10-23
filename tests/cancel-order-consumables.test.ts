@@ -3,7 +3,9 @@ import { Wallet } from "ethers";
 import cancelConsumableOrder from "../lib/marketplace/cancel-consumable-order";
 import { createProvider } from "../lib/utils";
 
-test("cancel consumable order", async () => {
+const liveTest = process.env.RUN_LIVE_TESTS === "1" ? test : test.skip;
+
+liveTest("cancel consumable order", async () => {
   const { PRIVATE_KEY, SKYMAVIS_API_KEY, CONSUMABLE_ID } = process.env;
 
   if (!PRIVATE_KEY || !SKYMAVIS_API_KEY || !CONSUMABLE_ID) {

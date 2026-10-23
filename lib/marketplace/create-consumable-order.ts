@@ -49,6 +49,9 @@ export async function createConsumableMarketplaceOrder(
     startedAt,
     expiredAt,
   } = orderData;
+  if (BigInt(unitPrice) <= 0n) {
+    throw new Error("Consumable listing price must be positive");
+  }
   const makerAddress = address.replace("ronin:", "0x");
   const provider = createProvider(skyMavisApiKey);
   const signerWithProvider = signer.connect(provider);

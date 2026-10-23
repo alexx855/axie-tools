@@ -13,9 +13,16 @@ These scripts are live examples for interacting with the Axie marketplace and Ro
 ## Setup
 
 ```bash
-cp .env.example .env
+# From the repository root, build the SDK used by these examples.
+pnpm install --frozen-lockfile
+pnpm build
+cd examples
 npm install
+cp .env.example .env
 ```
+
+The examples use the local SDK through `file:..`, including its purchase price
+limits. Run `pnpm build` in the repository root again after changing SDK source.
 
 ## Environment variables
 
@@ -59,7 +66,7 @@ These are useful building blocks when you want explicit control over one action 
 
 ```bash
 # Buy an Axie
-node settle-order.js $AXIE_ID
+node settle-order.js $AXIE_ID $MAX_PRICE
 
 # List an Axie for sale at 0.1 WETH
 node create-order.js $AXIE_ID 0.1

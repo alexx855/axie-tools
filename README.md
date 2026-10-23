@@ -1,7 +1,7 @@
 # Axie Tools
 
 ```typescript
-import { buyMarketplaceOrder, approveWETH, createProvider, Wallet } from "axie-tools";
+import { buyMarketplaceOrder, approveWETH, createProvider, parseEther, Wallet } from "axie-tools";
 
 const provider = createProvider(process.env.SKYMAVIS_API_KEY);
 const wallet = new Wallet(process.env.PRIVATE_KEY, provider);
@@ -12,6 +12,7 @@ const receipt = await buyMarketplaceOrder(
   wallet,
   process.env.MARKETPLACE_ACCESS_TOKEN,
   process.env.SKYMAVIS_API_KEY,
+  { maxPrice: parseEther("0.1") }, // Refuse orders above 0.1 WETH
 );
 ```
 
@@ -76,7 +77,7 @@ You need:
 ### Check floor price and buy an Axie
 
 ```typescript
-import { getAxieFloorPrice, buyMarketplaceOrder, approveWETH, createProvider, Wallet } from "axie-tools";
+import { getAxieFloorPrice, buyMarketplaceOrder, approveWETH, createProvider, parseEther, Wallet } from "axie-tools";
 
 const provider = createProvider(process.env.SKYMAVIS_API_KEY);
 const wallet = new Wallet(process.env.PRIVATE_KEY, provider);
@@ -94,6 +95,7 @@ const receipt = await buyMarketplaceOrder(
   wallet,
   process.env.MARKETPLACE_ACCESS_TOKEN,
   process.env.SKYMAVIS_API_KEY,
+  { maxPrice: parseEther("0.1") }, // Set an explicit spending limit
 );
 console.log(`TX: https://app.roninchain.com/tx/${receipt.hash}`);
 ```
@@ -155,10 +157,10 @@ for (const axieId of axieIds) {
 
 | Function | Description |
 | --- | --- |
-| `buyMarketplaceOrder(axieId, wallet, token, apiKey)` | Buy a listed Axie |
+| `buyMarketplaceOrder(axieId, wallet, token, apiKey, { maxPrice })` | Buy a listed Axie without exceeding `maxPrice` (wei) |
 | `createMarketplaceOrder(orderData, token, wallet, apiKey)` | List an Axie for sale or auction |
 | `cancelMarketplaceOrder(axieId, wallet, apiKey)` | Cancel an Axie listing |
-| `buyMaterialOrder(materialId, quantity, wallet, token, apiKey)` | Buy listed materials |
+| `buyMaterialOrder(materialId, quantity, wallet, token, apiKey, { maxTotalCost })` | Buy listed materials without exceeding `maxTotalCost` (wei) |
 | `createMaterialMarketplaceOrder(orderData, token, wallet, apiKey)` | List materials for sale |
 | `cancelMaterialOrder(materialId, wallet, apiKey)` | Cancel a material listing |
 
@@ -193,7 +195,7 @@ for (const axieId of axieIds) {
 Transaction helpers accept an optional `GasPriceOptions` parameter to customize gas pricing:
 
 ```typescript
-import { parseUnits, transferAxie, buyMarketplaceOrder } from "axie-tools";
+import { parseEther, parseUnits, transferAxie, buyMarketplaceOrder } from "axie-tools";
 
 // Use dynamic gas price from the network.
 await transferAxie(signer, recipientAddress, axieId);
@@ -205,6 +207,7 @@ await transferAxie(signer, recipientAddress, axieId, {
 });
 
 await buyMarketplaceOrder(axieId, wallet, token, apiKey, {
+  maxPrice: parseEther("0.1"),
   gasPrice: customGasPrice,
 });
 ```
@@ -236,6 +239,9 @@ Ready-to-use bot templates in the [examples folder](./examples/):
 | [auto-lister.js](./examples/auto-lister.js) | Lists all owned Axies at floor price with configurable markup |
 
 ```bash
+# From the repository root, build the local SDK used by these examples.
+pnpm install --frozen-lockfile
+pnpm build
 cd examples && npm install
 
 # Snipe Axies below 0.001 WETH, check every 30 seconds
@@ -306,23 +312,29 @@ Log into [app.axieinfinity.com](https://app.axieinfinity.com/), open dev tools, 
 
 ## Testing
 
-Tests use Bun and require environment variables:
+Run the offline regressions without credentials, marketplace requests, or transactions:
+
+```bash
+bun --no-env-file run test:offline
+```
+
+Live integration tests use Bun and require environment variables plus explicit opt-in:
 
 ```bash
 # Axie tests
-AXIE_ID=123456 PRICE=0.1 bun test tests/create-order-axie.test.ts --timeout 30000
-AXIE_ID=123456 bun test tests/cancel-order-axie.test.ts --timeout 30000
-AXIE_ID=123456 bun test tests/settle-order-axie.test.ts --timeout 30000
-bun test tests/create-orders-all-axies.test.ts --timeout 60000
+RUN_LIVE_TESTS=1 AXIE_ID=123456 PRICE=0.1 bun test tests/create-order-axie.test.ts --timeout 30000
+RUN_LIVE_TESTS=1 AXIE_ID=123456 bun test tests/cancel-order-axie.test.ts --timeout 30000
+RUN_LIVE_TESTS=1 AXIE_ID=123456 MAX_PRICE=0.1 bun test tests/settle-order-axie.test.ts --timeout 30000
+RUN_LIVE_TESTS=1 bun test tests/create-orders-all-axies.test.ts --timeout 60000
 
 # Material tests
-MATERIAL_ID=1099511627776 QUANTITY=5 PRICE=0.001 bun test tests/create-order-materials.test.ts --timeout 30000
-MATERIAL_ID=1099511627776 bun test tests/cancel-order-materials.test.ts --timeout 30000
-MATERIAL_ID=1099511627776 QUANTITY=5 PRICE=0.001 bun test tests/settle-order-materials.test.ts --timeout 30000
+RUN_LIVE_TESTS=1 MATERIAL_ID=1099511627776 QUANTITY=5 PRICE=0.001 bun test tests/create-order-materials.test.ts --timeout 30000
+RUN_LIVE_TESTS=1 MATERIAL_ID=1099511627776 bun test tests/cancel-order-materials.test.ts --timeout 30000
+RUN_LIVE_TESTS=1 MATERIAL_ID=1099511627776 QUANTITY=5 MAX_TOTAL_COST=0.005 bun test tests/settle-order-materials.test.ts --timeout 30000
 
 # Floor price tests
-AXIE_ID=1 bun test tests/axie-floor-price.test.ts --timeout 45000
-MATERIAL_ID=1099511627776 bun test tests/material-floor-price.test.ts --timeout 30000
+RUN_LIVE_TESTS=1 AXIE_ID=1 bun test tests/axie-floor-price.test.ts --timeout 45000
+RUN_LIVE_TESTS=1 MATERIAL_ID=1099511627776 bun test tests/material-floor-price.test.ts --timeout 30000
 ```
 
 ## Contributing

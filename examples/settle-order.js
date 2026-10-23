@@ -1,5 +1,5 @@
 import { buyMarketplaceOrder, approveWETH, createProvider } from "axie-tools";
-import { formatEther, Wallet } from "ethers";
+import { formatEther, parseEther, Wallet } from "ethers";
 import "dotenv/config";
 
 async function buyAxie() {
@@ -26,10 +26,14 @@ async function buyAxie() {
 
   // Get axie id from command line args
   const args = process.argv.slice(2);
-  if (args.length === 0) {
-    throw new Error("Please provide an axie ID as argument");
+  if (args.length < 2) {
+    throw new Error("Please provide an axie ID and maximum price in WETH");
   }
   const axieId = parseInt(args[0]);
+  const maxPrice = parseEther(args[1]);
+  if (maxPrice <= 0n) {
+    throw new Error("Maximum price must be positive");
+  }
 
   try {
     console.log(`🛒 Approving WETH for marketplace...`);
@@ -41,6 +45,7 @@ async function buyAxie() {
       wallet,
       process.env.MARKETPLACE_ACCESS_TOKEN,
       process.env.SKYMAVIS_API_KEY,
+      { maxPrice },
     );
     if (receipt) {
       console.log(

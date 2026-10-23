@@ -1,4 +1,4 @@
-import { AbiCoder } from "ethers";
+import { AbiCoder, formatEther } from "ethers";
 import { apiRequest, getMarketplaceApi } from "./utils";
 import type { IOrder } from "./marketplace";
 import { ORDER_FRAGMENTS } from "./marketplace";
@@ -306,9 +306,9 @@ export async function getConsumableFloorPrice(
     const pageSize = 50;
     let from = 0;
     let totalOrders = Number.POSITIVE_INFINITY;
-    const quantityNeeded = requestedQuantity ?? 0;
+    const quantityNeeded = BigInt(requestedQuantity ?? 0);
     let remainingQuantity = quantityNeeded;
-    let totalCost = 0;
+    let totalCost = 0n;
 
     while (from < totalOrders) {
       const response = await fetch(graphqlUrl, {
@@ -341,27 +341,32 @@ export async function getConsumableFloorPrice(
         (order: any) =>
           order.expiredAt * 1000 > Date.now() &&
           order.assets?.[0]?.availableQuantity &&
-          parseInt(order.assets[0].availableQuantity) > 0,
+          BigInt(order.assets[0].availableQuantity) > 0n &&
+          BigInt(order.currentPrice) > 0n,
       );
 
-      if (quantityNeeded <= 0) {
+      if (quantityNeeded <= 0n) {
         const cheapestOrder = validOrders[0];
         if (cheapestOrder) {
-          return (Number(cheapestOrder.currentPrice) / 1e18).toFixed(6);
+          return formatEther(BigInt(cheapestOrder.currentPrice));
         }
       }
 
       for (const order of validOrders) {
-        const availableQuantity = parseInt(order.assets[0].availableQuantity);
-        const quantityToUse = Math.min(remainingQuantity, availableQuantity);
-        const orderPrice = Number(order.currentPrice) / 1e18;
+        const availableQuantity = BigInt(order.assets[0].availableQuantity);
+        const quantityToUse =
+          remainingQuantity < availableQuantity
+            ? remainingQuantity
+            : availableQuantity;
+        const orderPrice = BigInt(order.currentPrice);
 
         totalCost += quantityToUse * orderPrice;
         remainingQuantity -= quantityToUse;
 
-        if (remainingQuantity <= 0) {
-          const averagePrice = totalCost / quantityNeeded;
-          return averagePrice.toFixed(6);
+        if (remainingQuantity <= 0n) {
+          return formatEther(
+            (totalCost + quantityNeeded - 1n) / quantityNeeded,
+          );
         }
       }
 
@@ -393,8 +398,8 @@ export function encodeConsumableOrderData(order: IOrder): string {
     [
       2, // ERC1155 type
       order.assets[0].address,
-      parseInt(order.assets[0].id),
-      parseInt(order.assets[0].quantity),
+      BigInt(order.assets[0].id),
+      BigInt(order.assets[0].quantity),
     ],
     order.expiredAt,
     order.paymentToken,

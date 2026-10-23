@@ -1,5 +1,9 @@
-import { AbiCoder, JsonRpcProvider, isAddress } from "ethers";
-import { getAxieContract, getMulticall3Contract } from "./contracts";
+import { AbiCoder, JsonRpcProvider, formatEther, getAddress } from "ethers";
+import {
+  getAxieContract,
+  getMulticall3Contract,
+  getWETHContract,
+} from "./contracts";
 import { apiRequest, getMarketplaceApi } from "./utils";
 import type {
   IOrder,
@@ -168,9 +172,55 @@ export async function getAxieDetails(
   }
 }
 
-/**
- * Encode order data for Axie (ERC721) orders
- */
+/** Snapshot and bind an Axie sell order to the caller's requested asset. */
+export async function validateAxieOrder(
+  order: IOrder,
+  axieId: number,
+  maker?: string,
+): Promise<IOrder> {
+  // Never validate one version of a caller-owned order and submit another.
+  const snapshot = structuredClone(order);
+  if (!Number.isSafeInteger(axieId) || axieId < 0) {
+    throw new Error("Invalid requested Axie ID");
+  }
+  if (
+    snapshot.kind !== "Sell" ||
+    !Array.isArray(snapshot.assets) ||
+    snapshot.assets.length !== 1 ||
+    snapshot.assets[0].erc !== "Erc721"
+  ) {
+    throw new Error("Expected a single Axie sell order");
+  }
+  const asset = snapshot.assets[0];
+  const id = BigInt(asset.id);
+  const quantity = BigInt(asset.quantity);
+  if (id !== BigInt(axieId) || (quantity !== 0n && quantity !== 1n)) {
+    throw new Error("Order does not match the requested Axie");
+  }
+  const normalizeAddress = (address: string) =>
+    getAddress(address.replace(/^ronin:/i, "0x"));
+  const [axieAddress, wethAddress] = await Promise.all([
+    getAxieContract().getAddress(),
+    getWETHContract().getAddress(),
+  ]);
+  if (
+    normalizeAddress(asset.address) !== normalizeAddress(axieAddress) ||
+    normalizeAddress(snapshot.paymentToken) !== normalizeAddress(wethAddress)
+  ) {
+    throw new Error("Order must use the Axie contract and WETH");
+  }
+  if (maker && normalizeAddress(snapshot.maker) !== normalizeAddress(maker)) {
+    throw new Error("Order maker does not match the signer");
+  }
+  asset.address = normalizeAddress(asset.address);
+  asset.id = id.toString();
+  asset.quantity = quantity.toString();
+  snapshot.maker = normalizeAddress(snapshot.maker);
+  snapshot.paymentToken = normalizeAddress(snapshot.paymentToken);
+  return snapshot;
+}
+
+/** Encode order data for Axie (ERC721) orders. */
 export function encodeAxieOrderData(order: IOrder): string {
   const orderTypes = [
     "(address maker, uint8 kind, (uint8 erc,address addr,uint256 id,uint256 quantity)[] assets, uint256 expiredAt, address paymentToken, uint256 startedAt, uint256 basePrice, uint256 endedAt, uint256 endedPrice, uint256 expectedState, uint256 nonce, uint256 marketFeePercentage)",
@@ -183,8 +233,8 @@ export function encodeAxieOrderData(order: IOrder): string {
       [
         1, // ERC721 type
         order.assets[0].address,
-        parseInt(order.assets[0].id),
-        parseInt(order.assets[0].quantity),
+        BigInt(order.assets[0].id),
+        BigInt(order.assets[0].quantity),
       ],
     ],
     order.expiredAt,
@@ -247,6 +297,7 @@ export async function getAxieFloorPrice(
       (axie: any) =>
         axie.order &&
         axie.order.currentPrice &&
+        BigInt(axie.order.currentPrice) > 0n &&
         axie.order.expiredAt * 1000 > Date.now(),
     );
 
@@ -256,7 +307,7 @@ export async function getAxieFloorPrice(
 
     // Return the cheapest available axie price
     const cheapestAxie = validAxies[0];
-    return (Number(cheapestAxie.order.currentPrice) / 1e18).toFixed(6);
+    return formatEther(BigInt(cheapestAxie.order.currentPrice));
   } catch (error) {
     return null;
   }

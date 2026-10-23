@@ -195,7 +195,7 @@ for (const axieId of axieIds) {
 Transaction helpers accept an optional `GasPriceOptions` parameter to customize gas pricing:
 
 ```typescript
-import { parseUnits, transferAxie, buyMarketplaceOrder } from "axie-tools";
+import { parseEther, parseUnits, transferAxie, buyMarketplaceOrder } from "axie-tools";
 
 // Use dynamic gas price from the network.
 await transferAxie(signer, recipientAddress, axieId);

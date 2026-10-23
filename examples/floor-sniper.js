@@ -1,5 +1,5 @@
 import { buyMarketplaceOrder, approveWETH, createProvider } from "axie-tools";
-import { parseEther, Wallet } from "ethers";
+import { formatEther, parseEther, Wallet } from "ethers";
 import "dotenv/config";
 
 // Floor price sniper bot
@@ -11,10 +11,10 @@ import "dotenv/config";
 // Example:
 //   node floor-sniper.js 0.001 30
 
-const TARGET_PRICE = parseFloat(process.argv[2]);
+const TARGET_PRICE = parseEther(process.argv[2] || "0");
 const POLL_INTERVAL = (parseInt(process.argv[3]) || 30) * 1000;
 
-if (isNaN(TARGET_PRICE) || TARGET_PRICE <= 0) {
+if (TARGET_PRICE <= 0n) {
   throw new Error("Provide a target price in WETH as the first argument");
 }
 
@@ -69,7 +69,7 @@ async function getCheapestAxie(skyMavisApiKey) {
   const cheapest = axies[0];
   return {
     id: parseInt(cheapest.id),
-    price: Number(cheapest.order.currentPrice) / 1e18,
+    price: BigInt(cheapest.order.currentPrice),
   };
 }
 
@@ -78,7 +78,7 @@ console.log("Approving WETH for marketplace...");
 await approveWETH(wallet);
 
 console.log(
-  `Sniping Axies below ${TARGET_PRICE} WETH (polling every ${POLL_INTERVAL / 1000}s)`,
+  `Sniping Axies below ${formatEther(TARGET_PRICE)} WETH (polling every ${POLL_INTERVAL / 1000}s)`,
 );
 
 async function poll() {
@@ -91,7 +91,7 @@ async function poll() {
   }
 
   console.log(
-    `[${timestamp}] Floor: ${cheapest.price.toFixed(6)} WETH (Axie #${cheapest.id})`,
+    `[${timestamp}] Floor: ${formatEther(cheapest.price)} WETH (Axie #${cheapest.id})`,
   );
 
   if (cheapest.price <= TARGET_PRICE) {
@@ -101,7 +101,7 @@ async function poll() {
       wallet,
       process.env.MARKETPLACE_ACCESS_TOKEN,
       process.env.SKYMAVIS_API_KEY,
-      { maxPrice: parseEther(TARGET_PRICE.toString()) },
+      { maxPrice: TARGET_PRICE },
     );
     if (receipt) {
       console.log(`Bought! TX: https://app.roninchain.com/tx/${receipt.hash}`);

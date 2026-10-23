@@ -1,28 +1,6 @@
 import { expect, test } from "bun:test";
-import { fileURLToPath } from "node:url";
-
-const repo = fileURLToPath(new URL("../", import.meta.url));
-
-// Isolate mocks from other tests and disable both credential loading and installs.
-function runOffline(script: string) {
-  const result = Bun.spawnSync({
-    cmd: [process.execPath, "--no-env-file", "--no-install", "-e", script],
-    cwd: repo,
-    env: { PATH: process.env.PATH ?? "" },
-    stdout: "pipe",
-    stderr: "pipe",
-    timeout: 10000,
-  });
-  if (result.exitCode !== 0) {
-    throw new Error(result.stderr.toString() + result.stdout.toString());
-  }
-  const line = result.stdout
-    .toString()
-    .split("\n")
-    .find((line) => line.startsWith("OFFLINE_RESULT:"));
-  if (!line) throw new Error("Offline child did not complete");
-  return JSON.parse(line.slice("OFFLINE_RESULT:".length));
-}
+import { runOffline } from "./helpers/run-offline";
+import { readFileSync } from "node:fs";
 
 test.each([false, true])(
   "CLI masks secret prompts and preserves environment bypass (%s)",
@@ -71,6 +49,68 @@ test.each([false, true])(
     );
     expect(secrets).toHaveLength(useEnvironment ? 0 : 2);
     for (const prompt of secrets) expect(prompt.type).toBe("password");
+  },
+);
+
+test("examples install the local SDK that enforces purchase limits", () => {
+  const manifest = JSON.parse(
+    readFileSync(new URL("../examples/package.json", import.meta.url), "utf8"),
+  );
+  const lock = JSON.parse(
+    readFileSync(
+      new URL("../examples/package-lock.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  expect(manifest.dependencies["axie-tools"]).toBe("file:..");
+  expect(lock.packages["node_modules/axie-tools"]).toMatchObject({
+    resolved: "..",
+    link: true,
+  });
+});
+
+test.each([
+  ["0.0000001", "100000000000", true],
+  ["0.123456789012345678", "123456789012345678", true],
+  ["0.123456789012345678", "123456789012345679", false],
+  ["0.001", "1000000000000000", true],
+])(
+  "sniper preserves the exact limit %s at listing price %s",
+  (target, price, buys) => {
+    const result = runOffline(`
+    import { mock } from "bun:test";
+    import * as ethers from "ethers";
+    process.env.PRIVATE_KEY = "offline-dummy";
+    process.env.MARKETPLACE_ACCESS_TOKEN = "offline-token";
+    process.env.SKYMAVIS_API_KEY = "offline-api";
+    process.argv = ["bun", "floor-sniper.js", ${JSON.stringify(target)}];
+    let approvals = 0;
+    const purchases = [];
+    globalThis.fetch = async (url, options) => {
+      if (url !== "https://api-gateway.skymavis.com/graphql/axie-marketplace") throw Error("Unexpected request");
+      return new Response(JSON.stringify({data:{axies:{results:[{
+        id: "1", order: {currentPrice: ${JSON.stringify(price)}, expiredAt: Math.floor(Date.now()/1000)+3600}
+      }]}}}));
+    };
+    const examples = process.cwd() + "/examples";
+    mock.module(Bun.resolveSync("dotenv/config", examples), () => ({}));
+    mock.module(Bun.resolveSync("ethers", examples), () => ({...ethers, Wallet: class {}}));
+    const sdk = {
+      createProvider: () => ({}),
+      approveWETH: async () => {approvals++;},
+      buyMarketplaceOrder: async (id, wallet, token, key, options) => {
+        purchases.push({id, maxPrice: options.maxPrice.toString()}); return false;
+      },
+    };
+    mock.module("axie-tools", () => sdk);
+    try { mock.module(Bun.resolveSync("axie-tools", examples), () => sdk); } catch {}
+    globalThis.setTimeout = () => {throw Error("OFFLINE_STOP");};
+    try { await import("./examples/floor-sniper.js"); }
+    catch (error) {if (error.message !== "OFFLINE_STOP") throw error;}
+    console.log("OFFLINE_RESULT:" + JSON.stringify({approvals, purchases}));
+  `);
+    expect(result.approvals).toBe(1);
+    expect(result.purchases).toEqual(buys ? [{ id: 1, maxPrice: price }] : []);
   },
 );
 

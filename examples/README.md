@@ -13,9 +13,16 @@ These scripts are live examples for interacting with the Axie marketplace and Ro
 ## Setup
 
 ```bash
-cp .env.example .env
+# From the repository root, build the SDK used by these examples.
+pnpm install --frozen-lockfile
+pnpm build
+cd examples
 npm install
+cp .env.example .env
 ```
+
+The examples use the local SDK through `file:..`, including its purchase price
+limits. Run `pnpm build` in the repository root again after changing SDK source.
 
 ## Environment variables
 

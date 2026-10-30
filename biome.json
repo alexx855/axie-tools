@@ -1,5 +1,15 @@
 {
   "formatter": {
     "indentStyle": "space"
+  },
+  "markdown": {
+    "formatter": {
+      "enabled": false
+    }
+  },
+  "yaml": {
+    "formatter": {
+      "enabled": false
+    }
   }
 }

@@ -106,7 +106,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.3",
-    "@types/bun": "^1.4.3",
+    "@types/bun": "^1.4.4",
     "@types/node": "^26.6.5",
     "@types/prompts": "^2.4.9",
     "esbuild": "^0.28.2"

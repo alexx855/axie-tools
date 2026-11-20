@@ -1,5 +1,11 @@
 import prompts from "prompts";
-import { JsonRpcProvider, formatEther, Signer, parseUnits } from "ethers";
+import {
+  JsonRpcProvider,
+  formatEther,
+  Signer,
+  parseUnits,
+  type Provider,
+} from "ethers";
 import {
   getAxieContract,
   getWETHContract,
@@ -15,10 +21,15 @@ import { getUserMaterials } from "./material";
 export interface GasPriceOptions {
   /** Custom gas price in wei. If provided, this value will be used instead of fetching from provider */
   gasPrice?: bigint;
+  /** Maximum gas price in wei. Defaults to 100 gwei. */
+  maxGasPrice?: bigint;
 }
 
+const RONIN_CHAIN_ID = 2020n;
+const DEFAULT_MAX_GAS_PRICE = parseUnits("100", "gwei");
+
 /**
- * Get gas price - either uses custom provided value or fetches current price from provider
+ * Get a bounded gas price for a Ronin transaction.
  * @param signerOrProvider - A Signer or Provider instance to fetch gas price from
  * @param options - Optional gas price configuration
  * @returns Gas price as bigint
@@ -27,34 +38,46 @@ export async function getGasPrice(
   signerOrProvider: Signer | JsonRpcProvider,
   options?: GasPriceOptions,
 ): Promise<bigint> {
-  // If custom gas price is provided, use it
-  if (options?.gasPrice !== undefined) {
-    return options.gasPrice;
+  const maxGasPrice =
+    options?.maxGasPrice === undefined
+      ? DEFAULT_MAX_GAS_PRICE
+      : options.maxGasPrice;
+  if (typeof maxGasPrice !== "bigint" || maxGasPrice <= 0n) {
+    throw new Error("maxGasPrice must be a positive bigint in wei");
   }
 
-  // Otherwise fetch from provider
-  let provider: JsonRpcProvider;
-  if ("provider" in signerOrProvider && signerOrProvider.provider) {
-    provider = signerOrProvider.provider as JsonRpcProvider;
+  let provider: Provider | null;
+  if ("provider" in signerOrProvider) {
+    provider = signerOrProvider.provider;
   } else {
     provider = signerOrProvider as JsonRpcProvider;
   }
 
-  try {
-    const feeData = await provider.getFeeData();
-    // Use gasPrice from feeData, fallback to a reasonable default if null
-    if (feeData.gasPrice) {
-      return feeData.gasPrice;
-    }
-  } catch (error) {
-    console.warn(
-      "Could not fetch gas price from network, using fallback.",
-      error,
+  if (!provider) {
+    throw new Error("A provider is required to verify the Ronin network");
+  }
+
+  const network = await provider.getNetwork();
+  if (network.chainId !== RONIN_CHAIN_ID) {
+    throw new Error(
+      `Refusing gas price from chain ${network.chainId}; expected Ronin chain ${RONIN_CHAIN_ID}`,
     );
   }
 
-  // Fallback default
-  return parseUnits("26", "gwei");
+  let gasPrice = options?.gasPrice;
+  if (gasPrice === undefined) {
+    const feeData = await provider.getFeeData();
+    gasPrice = feeData.gasPrice ?? undefined;
+  }
+
+  if (typeof gasPrice !== "bigint" || gasPrice <= 0n) {
+    throw new Error("Gas price must be a positive bigint in wei");
+  }
+  if (gasPrice > maxGasPrice) {
+    throw new Error(`Gas price exceeds the maximum allowed ${maxGasPrice}`);
+  }
+
+  return gasPrice;
 }
 
 const DEFAULT_RONIN_RPC_URL = "https://api.roninchain.com/rpc";

@@ -151,7 +151,7 @@ for (const axieId of axieIds) {
 | `getAccountInfo(address, provider, apiKey)` | Wallet balances, allowances, and approval status |
 | `validateMaterialToken(materialId, apiKey)` | Check if a material token ID exists |
 | `getTokenExpirationInfo(token)` | Check when an access token expires |
-| `getGasPrice(signerOrProvider, options?)` | Current network gas price or a supplied override |
+| `getGasPrice(signerOrProvider, options?)` | Bounded Ronin network gas price or a supplied override |
 
 ### Trading
 
@@ -192,27 +192,29 @@ for (const axieId of axieIds) {
 
 ### Gas price options
 
-Transaction helpers accept an optional `GasPriceOptions` parameter to customize gas pricing:
+Transaction helpers accept an optional `GasPriceOptions` parameter to customize gas pricing. Every transaction verifies Ronin chain ID `2020` and limits its gas price to 100 gwei by default:
 
 ```typescript
 import { parseEther, parseUnits, transferAxie, buyMarketplaceOrder } from "axie-tools";
 
-// Use dynamic gas price from the network.
+// Use a dynamic gas price from Ronin, subject to the default 100 gwei ceiling.
 await transferAxie(signer, recipientAddress, axieId);
 
 // Or pass a custom gas price.
 const customGasPrice = parseUnits("30", "gwei");
 await transferAxie(signer, recipientAddress, axieId, {
   gasPrice: customGasPrice,
+  maxGasPrice: parseUnits("40", "gwei"),
 });
 
 await buyMarketplaceOrder(axieId, wallet, token, apiKey, {
   maxPrice: parseEther("0.1"),
   gasPrice: customGasPrice,
+  maxGasPrice: parseUnits("40", "gwei"),
 });
 ```
 
-By default, transaction helpers fetch the current gas price from the network. If fetching fails, helpers fall back to 26 gwei.
+`maxGasPrice` is an upper bound for both network-supplied and custom gas prices. Set it lower for stricter automation policies, or explicitly raise it when current Ronin conditions require a higher price. Transaction helpers reject wrong-network, missing, non-positive, or over-limit fee data before submitting a write; they do not fall back when RPC fee data is unavailable.
 
 ### Contracts
 

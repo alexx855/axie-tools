@@ -4,6 +4,7 @@ import {
   Interface,
   getAddress,
   parseEther,
+  parseUnits,
   TypedDataEncoder,
 } from "ethers";
 import APP_AXIE_ORDER_EXCHANGE from "@roninbuilders/contracts/app_axie_order_exchange";
@@ -39,6 +40,9 @@ let signed: { domain: any; types: any; value: any }[];
 let balanceReads: number;
 let beforeBalance: (() => void) | undefined;
 let makerNonceReads: number;
+let providerGasPrice: bigint | null;
+let providerChainId: bigint;
+let feeReads: number;
 const originalFetch = globalThis.fetch;
 
 function order(price = "10", id = "1"): IOrder {
@@ -135,7 +139,15 @@ const { getMaterialFloorPrice, encodeMaterialOrderData } = await import(
 const { getConsumableFloorPrice, encodeConsumableOrderData } = await import(
   "../../lib/consumable"
 );
+const { getGasPrice } = await import("../../lib/utils");
 const signer = {
+  provider: {
+    getNetwork: async () => ({ chainId: providerChainId }),
+    getFeeData: async () => {
+      feeReads++;
+      return { gasPrice: providerGasPrice };
+    },
+  },
   getAddress: async () => BUYER,
   connect() {
     return this;
@@ -155,6 +167,9 @@ beforeEach(() => {
   signed = [];
   balanceReads = 0;
   makerNonceReads = 0;
+  providerGasPrice = 1n;
+  providerChainId = 2020n;
+  feeReads = 0;
   beforeBalance = undefined;
   globalThis.fetch = mock(async (_url: any, options: any) => {
     const request = JSON.parse(options?.body || "{}");
@@ -241,6 +256,49 @@ test("material purchase still respects quantity and total budget", async () => {
       gasPrice: 1n,
     }),
   ).toBe(false);
+});
+
+test("RPC gas above the default ceiling cannot reach a marketplace write", async () => {
+  providerGasPrice = parseUnits("101", "gwei");
+  expect(
+    await buyMarketplaceOrder(1, signer, "dummy", "dummy", {
+      maxPrice: 10n,
+    }),
+  ).toBe(false);
+  expect(writes).toHaveLength(0);
+});
+
+test("ordinary Ronin gas remains usable within a caller ceiling", async () => {
+  providerGasPrice = parseUnits("30", "gwei");
+  await expect(getGasPrice(signer)).resolves.toBe(providerGasPrice);
+
+  providerGasPrice = parseUnits("101", "gwei");
+  await expect(
+    getGasPrice(signer, { maxGasPrice: parseUnits("110", "gwei") }),
+  ).resolves.toBe(providerGasPrice);
+  expect(feeReads).toBe(2);
+});
+
+test("explicit gas cannot exceed its caller ceiling", async () => {
+  await expect(
+    getGasPrice(signer, {
+      gasPrice: parseUnits("41", "gwei"),
+      maxGasPrice: parseUnits("40", "gwei"),
+    }),
+  ).rejects.toThrow("exceeds");
+  expect(feeReads).toBe(0);
+});
+
+test("wrong-network and anomalous RPC fee data fail closed", async () => {
+  providerChainId = 1n;
+  await expect(getGasPrice(signer)).rejects.toThrow("expected Ronin");
+  expect(feeReads).toBe(0);
+
+  providerChainId = 2020n;
+  for (const anomalousGasPrice of [null, 0n, -1n]) {
+    providerGasPrice = anomalousGasPrice;
+    await expect(getGasPrice(signer)).rejects.toThrow("positive bigint");
+  }
 });
 
 const materialData = {
@@ -529,6 +587,7 @@ test("cached cancellation is snapshotted before signer await", async () => {
   const o = order();
   o.maker = BUYER;
   const mutatingSigner = {
+    provider: signer.provider,
     getAddress: async () => {
       o.assets[0].id = "2";
       return BUYER;
